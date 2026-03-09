@@ -35,7 +35,7 @@ jobs:
 
       - name: Podman login
         run: |
-          podman login --username="<token>" --password='${{ secrets.TOKEN }}' $REGISTRY
+          podman login --username="<token>" --password='${{ secrets.REGISTRY }}' $REGISTRY
 
       - name: Build image
         working-directory: ./images/selenite
@@ -51,7 +51,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           registry-username: "<token>"
-          registry-password: ${{ secrets.TOKEN }}
+          registry-password: ${{ secrets.REGISTRY }}
           image-name: ${{ env.IMAGE_NAME }}
           image-tag: ${{ steps.version.outputs.value }}
           local-build-name: ${{ env.LOCAL_BUILD_NAME }}
