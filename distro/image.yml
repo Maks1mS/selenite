@@ -14,7 +14,7 @@ modules:
 
         groupadd -r -f _$NAME > /dev/null 2>&1 ||:
         useradd -r -g _$NAME -s /dev/null -c "$NAME services" -M -d /var/lib/selenite-controller _$NAME > /dev/null 2>&1 ||:
-        mkir -p /var/lib/selenite-controller
+        mkdir -p /var/lib/selenite-controller
         chown _$NAME:_$NAME /var/lib/selenite-controller
 
   - name: System Services
