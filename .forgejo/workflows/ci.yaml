@@ -33,6 +33,10 @@ jobs:
       - name: Prepare env
         uses: alt-atomic/actions/prepare-env@9553cbf63780d0252b503904b7e3ca35f566a943
 
+      - name: Podman login
+        run: |
+          podman login --username="<token>" --password='${{ secrets.TOKEN }}' $REGISTRY
+
       - name: Build image
         working-directory: ./images/selenite
         run: |
