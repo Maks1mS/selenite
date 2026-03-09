@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+vars:
+  GOLANGCI_LINT_BIN: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.2
+
+tasks:
+  fmt:
+    desc: "Run golangci-lint with auto-fix"
+    cmds:
+      - "{{.GOLANGCI_LINT_BIN}} run --fix"
+
+  lint:
+    desc: "Run golangci-lint"
+    cmds:
+      - "{{.GOLANGCI_LINT_BIN}} run"

@@ -1,0 +1,22 @@
+version: "2"
+linters:
+  enable:
+    - gocritic
+    - gosec
+    - wrapcheck
+issues:
+  fix: true
+
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+    gofumpt:
+      extra-rules: true
+    goimports:
+      local-prefixes:
+        - altlinux.space/alt-atomic/selenite-controller

@@ -1,4 +1,27 @@
 modules:
+  - name: Copy root
+    type: copy
+    body:
+      source: root
+      destination: /
+      replace: true
+
+  - name: Create user for selenite-controller
+    type: shell
+    body:
+      command: |
+        export NAME=selenite-controller
+
+        groupadd -r -f _$NAME > /dev/null 2>&1 ||:
+        useradd -r -g _$NAME -s /dev/null -c "$NAME services" -M -d /var/lib/selenite-controller _$NAME > /dev/null 2>&1 ||:
+
+  - name: System Services
+    type: systemd
+    body:
+      targets:
+        - selenite-controller.service
+      enabled: true      
+
   - name: Base cleanup
     type: include
     body:

@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"altlinux.space/alt-atomic-lab/selenite/internal/app"
 )
 
 func main() {
@@ -17,9 +19,8 @@ func main() {
 		}
 	}()
 
-	_ = ctx
-	// err := app.Run(ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	err := app.Run(ctx)
+	if err != nil {
+		panic(err)
+	}
 }

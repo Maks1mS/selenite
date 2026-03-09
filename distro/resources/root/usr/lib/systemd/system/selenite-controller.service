@@ -1,0 +1,22 @@
+[Unit]
+Description=Selenite Controller
+After=network.target
+
+[Service]
+User=_selenite-controller
+WorkingDirectory=/var/lib/selenite-controller
+ExecStart=/usr/bin/selenite-controller serve
+TimeoutStopSec=20s
+SendSIGKILL=no
+TimeoutSec=0
+RestartSec=2
+Restart=always
+StartLimitBurst=3
+StartLimitInterval=60s
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+
+[Install]
+WantedBy=multi-user.target
