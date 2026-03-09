@@ -1,0 +1,12 @@
+modules:
+  - name: Base cleanup
+    type: include
+    body:
+      targets:
+        - /usr/share/apm/includes/common/cleanup.yml
+
+  - name: Better cleanup
+    type: include
+    body:
+      targets:
+        - better-cleanup.yml

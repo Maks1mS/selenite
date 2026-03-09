@@ -1,0 +1,6 @@
+modules:
+  - name: Include
+    type: include
+    body:
+      targets:
+        - controller-deps.yml

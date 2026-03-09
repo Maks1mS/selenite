@@ -1,0 +1,8 @@
+modules:
+  - name: Install deps for selenite-controller
+    type: packages
+    body:
+      install:
+        - busybox
+        - nftables
+        - podman-compose

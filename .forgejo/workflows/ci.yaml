@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  IMAGE_NAME: alt-atomic-lab/selenite
+  REGISTRY: altlinux.space
+  CACHE_IMAGE: altlinux.space/alt-atomic-lab/selenite-cache:latest
+  LOCAL_BUILD_NAME: localhost/selenite
+
+jobs:
+  build-image:
+    name: Build image
+    runs-on: als-huge
+    container:
+      image: altlinux.space/actions/runner/containers:sisyphus
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get image version
+        id: version
+        run: |
+          VERSION=$(git describe --tags 2>/dev/null || git rev-parse --short HEAD)
+          echo "value=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Prepare env
+        uses: alt-atomic/actions/prepare-env@9553cbf63780d0252b503904b7e3ca35f566a943
+
+      - name: Build image
+        working-directory: ./images/selenite
+        run: |
+          podman build \
+            --tag $LOCAL_BUILD_NAME \
+            --cache-from  "${CACHE_IMAGE}" \
+            --cache-to    "${CACHE_IMAGE}" \
+            . 
+
+      - name: Push images
+        uses: alt-atomic/actions/push-and-sign@9553cbf63780d0252b503904b7e3ca35f566a943
+        with:
+          registry: ${{ env.REGISTRY }}
+          registry-username: "<token>"
+          registry-password: ${{ secrets.TOKEN }}
+          image-name: ${{ IMAGE_NAME }}
+          image-tag: ${{ steps.version.outputs.value }}
+          local-build-name: ${{ env.LOCAL_BUILD_NAME }}

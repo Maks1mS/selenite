@@ -1,0 +1,26 @@
+modules:
+  - name: Clean all repos
+    type: repos
+    body:
+      clean: true
+
+  - name: Cleanup apt
+    type: remove
+    body:
+      targets:
+        - /var/cache/apt/archives
+        - /var/cache/apt/pkgcache.bin
+        - /var/cache/apt/srcpkgcache.bin
+        - /var/lib/apt/lists
+
+  - name: Cleanup locale
+    type: shell
+    body:
+      command: |
+        # keep only C and en_US
+        find /usr/lib/locale -mindepth 1 -maxdepth 1 \
+          ! -name 'en_US*' ! -name 'C*' ! -name 'locale-archive' \
+          -exec rm -rf {} +
+
+        # remove all translates
+        rm -rf /usr/share/locale/*
