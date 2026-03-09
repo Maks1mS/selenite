@@ -38,7 +38,6 @@ jobs:
           podman login --username="<token>" --password='${{ secrets.REGISTRY }}' $REGISTRY
 
       - name: Build image
-        working-directory: ./images/selenite
         run: |
           podman build \
             --tag $LOCAL_BUILD_NAME \
