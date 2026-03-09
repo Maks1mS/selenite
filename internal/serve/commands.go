@@ -14,12 +14,36 @@ import (
 	"altlinux.space/alt-atomic-lab/selenite/internal/version"
 )
 
+const helpTemplate = `Selenite is an immutable server OS built around podman compose stacks.
+
+USAGE:
+   ssh <server> [command [options]]
+
+COMMANDS:{{range .VisibleCommands}}
+   {{$s := join .Names ", "}}{{$s}}{{"\t"}}{{.Usage}}{{end}}
+
+Run 'ssh <server> help <command>' for more information about a command.
+`
+
+const subCmdHelpTemplate = `{{.Name}}{{if .Usage}} — {{.Usage}}{{end}}{{if .Description}}
+
+{{wrap .Description 0}}{{end}}
+
+USAGE:
+   ssh <server> {{.Name}}{{if .ArgsUsage}} {{.ArgsUsage}}{{end}}{{if .VisibleFlags}} [options]{{end}}
+{{- if .VisibleFlags}}
+
+OPTIONS:{{range .VisibleFlags}}
+   {{wrap .String 6}}{{end}}
+{{- end}}
+`
+
 func appCmd(sess ssh.Session) *cli.Command {
 	root := &cli.Command{
-		Name:      "-",
-		UsageText: "admin [...]",
-		Usage:     "Control your Selenite server",
-		// CustomRootCommandHelpTemplate: "no help yet\n\n_",
+		Name:                          "-",
+		UsageText:                     "ssh <server> [command [options]]",
+		Usage:                         "Immutable server OS for managing podman compose stacks",
+		CustomRootCommandHelpTemplate: helpTemplate,
 		Commands: []*cli.Command{
 			shellCommand(sess),
 			versionCommand(),
@@ -40,16 +64,9 @@ func (p ptyWriter) Write(b []byte) (int, error) {
 	return len(b), err
 }
 
-// sessWriter returns a PTY-aware writer for session stdout.
-func sessWriter(sess ssh.Session) io.Writer {
-	var w io.Writer = sess
-	if _, _, active := sess.Pty(); active {
-		w = ptyWriter{w}
-	}
-	return w
-}
-
 func prepareCmdForWish(cmd *cli.Command, sess ssh.Session) {
+	cli.HelpFlag = nil
+
 	cmd.Reader = sess
 	var w io.Writer = sess.Stderr()
 	if _, _, active := sess.Pty(); active {
@@ -62,6 +79,9 @@ func prepareCmdForWish(cmd *cli.Command, sess ssh.Session) {
 	}
 	cmd.EnableShellCompletion = false
 	for _, subCmd := range cmd.Commands {
+		if subCmd.CustomHelpTemplate == "" {
+			subCmd.CustomHelpTemplate = subCmdHelpTemplate
+		}
 		prepareCmdForWish(subCmd, sess)
 	}
 }
