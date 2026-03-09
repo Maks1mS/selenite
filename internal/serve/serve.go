@@ -9,6 +9,7 @@ import (
 
 	"charm.land/log/v2"
 	"charm.land/wish/v2"
+	"charm.land/wish/v2/logging"
 	"github.com/charmbracelet/ssh"
 )
 
@@ -22,7 +23,23 @@ func Serve(ctx context.Context, options ServeOptions) error {
 	port := options.Port
 
 	s, err := wish.NewServer(
+		ssh.AllocatePty(),
 		wish.WithAddress(net.JoinHostPort(host, strconv.Itoa(port))),
+		wish.WithHostKeyPath("./.selenite/keys/id_ed25519"),
+		wish.WithMiddleware(
+			func(next ssh.Handler) ssh.Handler {
+				return func(sess ssh.Session) {
+					app := appCmd(sess)
+					if err := app.Run(sess.Context(), append([]string{""}, sess.Command()...)); err != nil {
+						_, _ = fmt.Fprintf(app.ErrWriter, "Error: %s\n", err)
+						_ = sess.Exit(1)
+						return
+					}
+					next(sess)
+				}
+			},
+			logging.Middleware(),
+		),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %w", err)

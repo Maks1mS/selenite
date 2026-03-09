@@ -1,0 +1,12 @@
+                                             
+ ▄▄▄▄▄▄▄       ▄▄                            
+█████▀▀▀       ██             ▀▀  ██         
+ ▀████▄  ▄█▀█▄ ██ ▄█▀█▄ ████▄ ██ ▀██▀▀ ▄█▀█▄ 
+   ▀████ ██▄█▀ ██ ██▄█▀ ██ ██ ██  ██   ██▄█▀ 
+███████▀ ▀█▄▄▄ ██ ▀█▄▄▄ ██ ██ ██▄ ██   ▀█▄▄▄ 
+                                             
+Selenite uses SSH for management, not for shell access.
+This debug shell is not a normal entry point.
+
+Proceed with caution. You have been warned.
+
