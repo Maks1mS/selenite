@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/serve"
 	"github.com/urfave/cli/v3"
+
+	"altlinux.space/alt-atomic-lab/selenite/internal/serve"
 )
 
 func Run(ctx context.Context) error {

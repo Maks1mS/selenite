@@ -19,4 +19,4 @@ formatters:
       extra-rules: true
     goimports:
       local-prefixes:
-        - altlinux.space/alt-atomic/selenite-controller
+        - altlinux.space/alt-atomic-lab/selenite
