@@ -1,0 +1,5 @@
+repos:
+  - repo: https://code.forgejo.org/forgejo/runner
+    rev: 6d1d83364da92c634316dea2d9c66504b1c535bc # v12.7.1
+    hooks:
+      - id: forgejo-runner-validate

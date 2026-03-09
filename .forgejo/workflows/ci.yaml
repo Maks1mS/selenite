@@ -48,6 +48,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           registry-username: "<token>"
           registry-password: ${{ secrets.TOKEN }}
-          image-name: ${{ IMAGE_NAME }}
+          image-name: ${{ env.IMAGE_NAME }}
           image-tag: ${{ steps.version.outputs.value }}
           local-build-name: ${{ env.LOCAL_BUILD_NAME }}
