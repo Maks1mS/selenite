@@ -2,17 +2,19 @@ module altlinux.space/alt-atomic-lab/selenite
 
 go 1.25.8
 
-require github.com/urfave/cli/v3 v3.7.0
+require (
+	charm.land/log/v2 v2.0.0
+	charm.land/wish/v2 v2.0.0
+	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
+	github.com/urfave/cli/v3 v3.7.0
+)
 
 require (
 	charm.land/bubbletea/v2 v2.0.2 // indirect
 	charm.land/lipgloss/v2 v2.0.1 // indirect
-	charm.land/log/v2 v2.0.0 // indirect
-	charm.land/wish/v2 v2.0.0 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/charmbracelet/colorprofile v0.4.2 // indirect
 	github.com/charmbracelet/keygen v0.5.4 // indirect
-	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260205113103-524a6607adb8 // indirect
 	github.com/charmbracelet/x/ansi v0.11.6 // indirect
 	github.com/charmbracelet/x/conpty v0.1.1 // indirect
