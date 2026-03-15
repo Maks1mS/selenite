@@ -4,6 +4,16 @@ linters:
     - gocritic
     - gosec
     - wrapcheck
+    - contextcheck
+    - dupl
+    - bodyclose
+    - exptostd
+    - exhaustive
+    - unparam
+    - nilnil
+    - nilerr
+    - errorlint
+    - gocognit
 issues:
   fix: true
 
