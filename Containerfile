@@ -14,7 +14,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -o /selenite-controller \
     ./cmd/selenite-controller
 
-FROM altlinux.space/alt-atomic/core/stable:20260305@sha256:0ca8633b0d8a7167ac486685c5e3bfbf65db82994d5087fd9f7e1d1244b0385e as base
+FROM altlinux.space/alt-atomic/core-minimal/nightly:20260305@sha256:a8b1523fee98e40fbc2a05c0c26b220a4f8d51880bc57bb9644039f78df06f78 as base
 
 ARG DEV
 ENV DEV=$DEV
