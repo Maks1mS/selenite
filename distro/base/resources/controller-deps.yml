@@ -2,6 +2,7 @@ modules:
   - name: Install deps for selenite-controller
     type: packages
     body:
+      update: true
       install:
         - busybox
         - nftables
