@@ -1,0 +1,13 @@
+[Unit]
+Description=Selenite first-boot setup
+After=systemd-logind.service
+ConditionPathExists=!/var/lib/selenite-setup-done
+
+[Service]
+Type=oneshot
+ExecStart=loginctl enable-linger _selenite-podman-executor
+ExecStartPost=/usr/bin/touch /var/lib/selenite-setup-done
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

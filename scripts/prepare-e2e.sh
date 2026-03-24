@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+IMAGE_TAG="selenite-tmp"
+WORK_DIR="${WORK_DIR:-/var/tmp/selenite}"
+DISK_IMAGE="disk.raw"
+DISK_SIZE="4G"
+
+info()  { echo "=== $*"; }
+die()   { echo "ERROR: $*" >&2; exit 1; }
+
+FORCE="${FORCE:-0}"
+if [[ "${1:-}" == "--force" ]]; then FORCE=1; fi
+
+info "Building image"
+podman build \
+    --tag "$IMAGE_TAG" \
+    --build-arg DEV=1 \
+    "$SCRIPT_DIR/../"
+
+IMAGE_ID=$(podman image inspect --format '{{.Id}}' "$IMAGE_TAG")
+SCRIPT_HASH=$(sha256sum "$0" | awk '{print $1}')
+CACHE_KEY="${IMAGE_ID}:${SCRIPT_HASH}"
+CACHE_FILE="$WORK_DIR/$DISK_IMAGE.cache-key"
+
+mkdir -p "$WORK_DIR"
+if [[ "$FORCE" != "1" && -f "$WORK_DIR/$DISK_IMAGE" && -f "$CACHE_FILE" ]]; then
+    if [[ "$CACHE_KEY" == "$(cat "$CACHE_FILE")" ]]; then
+        info "Disk image is up to date, skipping rebuild"
+        exit 0
+    fi
+fi
+
+info "Transferring image to root storage"
+podman save "$IMAGE_TAG" | sudo podman load
+
+info "Installing to disk"
+sudo rm -f "$WORK_DIR/$DISK_IMAGE"
+sudo truncate -s "$DISK_SIZE" "$WORK_DIR/$DISK_IMAGE"
+sudo podman run --rm --privileged --pid=host \
+    -v /var/lib/containers:/var/lib/containers \
+    -v /dev:/dev \
+    --security-opt label=type:unconfined_t \
+    -e LANG=C.UTF-8 \
+    -v "$WORK_DIR:/output" \
+    "$IMAGE_TAG" \
+    bootc install to-disk \
+        --generic-image \
+        --via-loopback \
+        --filesystem ext4 \
+        "/output/$DISK_IMAGE"
+
+sudo bash -c "echo \"$CACHE_KEY\" > \"$CACHE_FILE\""
+
+sudo chmod 666 "$WORK_DIR/$DISK_IMAGE"
+sudo chmod 666 "$CACHE_FILE"

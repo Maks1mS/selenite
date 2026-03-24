@@ -7,3 +7,4 @@ modules:
         - busybox
         - nftables
         - podman-compose
+        - sysctl-conf-userns

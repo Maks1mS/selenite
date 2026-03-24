@@ -1,9 +1,4 @@
 modules:
-  - name: Clean all repos
-    type: repos
-    body:
-      clean: true
-
   - name: Cleanup apt
     type: remove
     body:

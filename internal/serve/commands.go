@@ -46,6 +46,7 @@ func appCmd(sess ssh.Session) *cli.Command {
 		CustomRootCommandHelpTemplate: helpTemplate,
 		Commands: []*cli.Command{
 			shellCommand(sess),
+			stackCommand(sess),
 			versionCommand(),
 		},
 	}

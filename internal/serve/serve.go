@@ -14,18 +14,24 @@ import (
 )
 
 type ServeOptions struct {
-	Host string
-	Port int
+	Host        string
+	Port        int
+	HostKeyPath string // default: "./.selenite/keys/id_ed25519"
 }
 
 func Serve(ctx context.Context, options ServeOptions) error {
 	host := options.Host
 	port := options.Port
 
+	hostKeyPath := options.HostKeyPath
+	if hostKeyPath == "" {
+		hostKeyPath = "./.selenite/keys/id_ed25519"
+	}
+
 	s, err := wish.NewServer(
 		ssh.AllocatePty(),
 		wish.WithAddress(net.JoinHostPort(host, strconv.Itoa(port))),
-		wish.WithHostKeyPath("./.selenite/keys/id_ed25519"),
+		wish.WithHostKeyPath(hostKeyPath),
 		wish.WithMiddleware(
 			func(next ssh.Handler) ssh.Handler {
 				return func(sess ssh.Session) {

@@ -1,11 +1,4 @@
 modules:
-  # - name: Enable rootless podman
-  #   type: shell
-  #   body:
-  #     command: |
-  #       control newuidmap public
-  #       control newgidmap public
-
   - name: Include
     type: include
     body:

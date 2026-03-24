@@ -6,22 +6,39 @@ modules:
       destination: /
       replace: true
 
-  - name: Create user for selenite-controller
+  - name: Create users and groups
     type: shell
     body:
       command: |
-        export NAME=selenite-controller
+        groupadd -r -f _selenite-workloads > /dev/null 2>&1 ||:
 
-        groupadd -r -f _$NAME > /dev/null 2>&1 ||:
-        useradd -r -g _$NAME -s /dev/null -c "$NAME services" -M -d /var/lib/selenite-controller _$NAME > /dev/null 2>&1 ||:
+        groupadd -r -f _selenite-controller > /dev/null 2>&1 ||:
+        useradd -r -g _selenite-controller -G _selenite-workloads -s /dev/null -c "selenite-controller services" -M -d /var/lib/selenite-controller _selenite-controller > /dev/null 2>&1 ||:
         mkdir -p /var/lib/selenite-controller
-        chown _$NAME:_$NAME /var/lib/selenite-controller
+        chown _selenite-controller:_selenite-controller /var/lib/selenite-controller
+
+        groupadd -r -f _selenite-podman-executor > /dev/null 2>&1 ||:
+        useradd -r -g _selenite-podman-executor -G _selenite-workloads -s /dev/null -c "selenite podman executor" -M -d /var/lib/selenite-podman-executor _selenite-podman-executor > /dev/null 2>&1 ||:
+
+        mkdir -p /var/lib/selenite-podman-executor/stacks
+        chown _selenite-podman-executor:_selenite-podman-executor /var/lib/selenite-podman-executor
+        chown _selenite-podman-executor:_selenite-workloads /var/lib/selenite-podman-executor/stacks
+        chmod 2770 /var/lib/selenite-podman-executor/stacks
+
+  - name: Enable rootless podman for _selenite-podman-executor
+    type: shell
+    body:
+      command: |
+        control newuidmap public
+        control newgidmap public
+        usermod --add-subuids 100000-165536 --add-subgids 100000-165536 _selenite-podman-executor
 
   - name: System Services
     type: systemd
     body:
       targets:
         - selenite-controller.service
+        - selenite-setup.service
       enabled: true      
 
   - name: Base cleanup

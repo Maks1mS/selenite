@@ -14,7 +14,13 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -o /selenite-controller \
     ./cmd/selenite-controller
 
-FROM altlinux.space/alt-atomic/core-minimal/nightly:20260316@sha256:708e5fe73fd356590809dd6b50e7053bc3510174db9aa8014c8ae6cc856a54f8 as base
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-s -w" \
+    -trimpath \
+    -o /selenite-podman-executor \
+    ./cmd/selenite-podman-executor
+
+FROM altlinux.space/alt-atomic/core-minimal/nightly:20260323@sha256:0b0fef657304ca2531ba5729b5d0ee9c5cfb279d3ca3a7b784a52027521cf0ab as base
 
 ARG DEV
 ENV DEV=$DEV
@@ -28,6 +34,9 @@ RUN --mount=type=bind,source=./distro/image.yml,target=/etc/apm/image.yml \
     apm system image build
 
 COPY --from=selenite-controller /selenite-controller /usr/bin/selenite-controller
+COPY --from=selenite-controller /selenite-podman-executor /usr/libexec/selenite-podman-executor
+RUN chown root:_selenite-controller /usr/libexec/selenite-podman-executor && \
+    chmod 4750 /usr/libexec/selenite-podman-executor
 
 WORKDIR /
 CMD ["/sbin/init"]
