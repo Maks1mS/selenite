@@ -19,6 +19,7 @@ func stackCommand(sess ssh.Session) *cli.Command {
 			stackListCommand(),
 			stackUpCommand(),
 			stackDownCommand(),
+			stackRemoveCommand(),
 			stackPsCommand(),
 			stackLogsCommand(),
 		},
@@ -26,14 +27,18 @@ func stackCommand(sess ssh.Session) *cli.Command {
 	return cmd
 }
 
+const stackNamePlaceholder = "<name>"
+
+var errStackNameRequired = fmt.Errorf("stack name required")
+
 func stackDeployCommand(sess ssh.Session) *cli.Command {
 	return &cli.Command{
 		Name:      "deploy",
 		Usage:     "Deploy a stack from stdin (compose.yml)",
-		ArgsUsage: "<name>",
+		ArgsUsage: stackNamePlaceholder,
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
-				return fmt.Errorf("stack name required")
+				return errStackNameRequired
 			}
 			return compose.NewManager().Deploy(ctx, c.Args().First(), sess, c.Writer)
 		},
@@ -65,10 +70,10 @@ func stackUpCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "up",
 		Usage:     "Start a stack",
-		ArgsUsage: "<name>",
+		ArgsUsage: stackNamePlaceholder,
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
-				return fmt.Errorf("stack name required")
+				return errStackNameRequired
 			}
 			return compose.NewManager().Up(ctx, c.Args().First(), c.Writer)
 		},
@@ -79,12 +84,26 @@ func stackDownCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "down",
 		Usage:     "Stop a stack",
-		ArgsUsage: "<name>",
+		ArgsUsage: stackNamePlaceholder,
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
-				return fmt.Errorf("stack name required")
+				return errStackNameRequired
 			}
 			return compose.NewManager().Down(ctx, c.Args().First(), c.Writer)
+		},
+	}
+}
+
+func stackRemoveCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "remove",
+		Usage:     "Remove a stack",
+		ArgsUsage: stackNamePlaceholder,
+		Action: func(ctx context.Context, c *cli.Command) error {
+			if c.NArg() == 0 {
+				return errStackNameRequired
+			}
+			return compose.NewManager().Remove(ctx, c.Args().First(), c.Writer)
 		},
 	}
 }
@@ -93,10 +112,10 @@ func stackPsCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "ps",
 		Usage:     "Show stack container status",
-		ArgsUsage: "<name>",
+		ArgsUsage: stackNamePlaceholder,
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
-				return fmt.Errorf("stack name required")
+				return errStackNameRequired
 			}
 			return compose.NewManager().Ps(ctx, c.Args().First(), c.Writer)
 		},
@@ -107,7 +126,7 @@ func stackLogsCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "logs",
 		Usage:     "View stack logs",
-		ArgsUsage: "<name> [service]",
+		ArgsUsage: fmt.Sprintf("%s [service]", stackNamePlaceholder),
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "follow",
@@ -117,7 +136,7 @@ func stackLogsCommand() *cli.Command {
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
-				return fmt.Errorf("stack name required")
+				return errStackNameRequired
 			}
 			return compose.NewManager().Logs(ctx, c.Args().Get(0), c.Bool("follow"), c.Args().Get(1), c.Writer)
 		},

@@ -69,6 +69,22 @@ func (m *Manager) Deploy(ctx context.Context, name string, r io.Reader, w io.Wri
 	return m.run(ctx, w, path, "up", "-d")
 }
 
+func (m *Manager) Remove(ctx context.Context, name string, w io.Writer) error {
+	if err := validateName(name); err != nil {
+		return err
+	}
+
+	if err := m.Down(ctx, name, w); err != nil {
+		return fmt.Errorf("down: %w", err)
+	}
+
+	if err := os.RemoveAll(m.stackPath(name)); err != nil {
+		return fmt.Errorf("remove all: %w", err)
+	}
+
+	return nil
+}
+
 func (m *Manager) Up(ctx context.Context, name string, w io.Writer) error {
 	if err := validateName(name); err != nil {
 		return err

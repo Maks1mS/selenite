@@ -94,6 +94,33 @@ func TestUp(t *testing.T) {
 	})
 }
 
+func TestRemove(t *testing.T) {
+	t.Run("invalid name", func(t *testing.T) {
+		r := &mockRunner{}
+		m := newTestManager(t, r)
+		err := m.Remove(context.Background(), "Bad Name", io.Discard)
+		require.Error(t, err)
+		require.Empty(t, r.calls)
+	})
+
+	t.Run("removes compose.yml and calls down", func(t *testing.T) {
+		r := &mockRunner{}
+		m := newTestManager(t, r)
+
+		stacksDir := filepath.Join(m.baseDir, StacksSubdir)
+		require.NoError(t, os.MkdirAll(filepath.Join(stacksDir, "mystack"), 0o750))
+		require.NoError(t, os.WriteFile(filepath.Join(stacksDir, "mystack", "compose.yml"), []byte{}, 0o640)) //gosec:disable G306 -- Expected
+
+		err := m.Remove(context.Background(), "mystack", io.Discard)
+		require.NoError(t, err)
+
+		require.Len(t, r.calls, 1)
+		require.Equal(t, ExecutorBin, r.calls[0].name)
+		require.Equal(t, []string{m.stackPath("mystack"), "down"}, r.calls[0].args)
+		require.NoDirExists(t, filepath.Join(stacksDir, "mystack"))
+	})
+}
+
 func TestDownAndPs(t *testing.T) {
 	type opFunc func(m *Manager, stackName string) error
 

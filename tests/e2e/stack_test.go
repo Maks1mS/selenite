@@ -31,4 +31,10 @@ func TestStack(t *testing.T) {
 		out := mustRunCmd(t, client, "stack list")
 		require.Contains(t, out, stackName)
 	})
+
+	run(t, "remove removes stack", func(t *testing.T) {
+		mustRunCmd(t, client, "stack remove "+stackName)
+		out := mustRunCmd(t, client, "stack list")
+		require.Equal(t, "no stacks deployed\n", out)
+	})
 }
