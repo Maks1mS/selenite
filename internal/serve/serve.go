@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 
+	"altlinux.space/alt-atomic-lab/selenite/internal/access/keys"
 	"charm.land/log/v2"
 	"charm.land/wish/v2"
 	"charm.land/wish/v2/logging"
@@ -42,6 +43,27 @@ func Serve(ctx context.Context, options ServeOptions) error {
 						return
 					}
 					next(sess)
+				}
+			},
+			func(next ssh.Handler) ssh.Handler {
+				return func(sess ssh.Session) {
+					keys, err := keys.NewKeysManager().List()
+					if err != nil {
+						_ = sess.Exit(1)
+						return
+					}
+					if len(keys) == 0 {
+						next(sess)
+						return
+					}
+					for _, key := range keys {
+						if ssh.KeysEqual(sess.PublicKey(), key.Pk) {
+							log.Info("new session", "name", key.Name)
+							next(sess)
+						}
+					}
+					wish.Println(sess, "I don't know who you are!")
+					sess.Exit(1)
 				}
 			},
 			logging.Middleware(),
