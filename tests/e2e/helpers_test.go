@@ -4,6 +4,8 @@ package e2e
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -51,7 +53,7 @@ func run(t *testing.T, name string, fn func(t *testing.T)) {
 // mustRunCmd executes cmd over SSH and returns output; fatals on error.
 func mustRunCmd(t *testing.T, client *gossh.Client, cmd string) string {
 	t.Helper()
-	out, err := runCmd(t, client, cmd)
+	out, err := runCmdWithStdin(t, client, cmd, nil)
 	require.NoError(t, err, "command %q\noutput: %s", cmd, out)
 	return out
 }
@@ -84,4 +86,37 @@ func mustDeployStack(t *testing.T, client *gossh.Client, name, composeYAML strin
 	t.Helper()
 	_, err := deployStack(t, client, name, composeYAML)
 	require.NoError(t, err, "stack deploy %q", name)
+}
+
+func runCmdWithStdin(t *testing.T, client *gossh.Client, cmd string, stdin io.Reader) (string, error) {
+	t.Helper()
+	sess, err := client.NewSession()
+	if err != nil {
+		return "", fmt.Errorf("new session: %w", err)
+	}
+	defer sess.Close()
+
+	if stdin != nil {
+		sess.Stdin = stdin
+	}
+
+	var buf strings.Builder
+	sess.Stdout = &buf
+	sess.Stderr = &buf
+
+	if err := sess.Run(cmd); err != nil {
+		var ee *gossh.ExitError
+		if errors.As(err, &ee) {
+			return buf.String(), ee
+		}
+		return buf.String(), err
+	}
+	return buf.String(), nil
+}
+
+func mustRunCmdWithStdin(t *testing.T, client *gossh.Client, cmd string, stdin io.Reader) string {
+	t.Helper()
+	out, err := runCmdWithStdin(t, client, cmd, stdin)
+	require.NoError(t, err, "command %q\noutput: %s", cmd, out)
+	return out
 }

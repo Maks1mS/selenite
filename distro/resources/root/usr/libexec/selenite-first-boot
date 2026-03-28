@@ -1,0 +1,10 @@
+#!/bin/bash -e
+
+loginctl enable-linger _selenite-podman-executor
+
+mkdir -p /var/lib/selenite-controller/.ssh
+touch /var/lib/selenite-controller/.ssh/authorized_keys
+
+chown -R _selenite-controller:_selenite-controller /var/lib/selenite-controller
+chmod 700 /var/lib/selenite-controller/.ssh
+chmod 600 /var/lib/selenite-controller/.ssh/authorized_keys

@@ -4,14 +4,11 @@
 package e2e
 
 import (
-	"bytes"
 	"crypto/ed25519"
-	"errors"
 	"fmt"
 	"net"
 	"os/exec"
 	"strconv"
-	"testing"
 	"time"
 
 	gossh "golang.org/x/crypto/ssh"
@@ -73,27 +70,4 @@ func sshClientConfig() *gossh.ClientConfig {
 		Auth:            []gossh.AuthMethod{gossh.PublicKeys(signer)},
 		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
 	}
-}
-
-// runCmd runs a SSH command and returns the output.
-// Command output is written to the session's stderr channel in selenite.
-func runCmd(t *testing.T, client *gossh.Client, cmd string) (string, error) {
-	t.Helper()
-	sess, err := client.NewSession()
-	if err != nil {
-		return "", fmt.Errorf("new session: %w", err)
-	}
-	defer sess.Close()
-
-	var buf bytes.Buffer
-	sess.Stderr = &buf
-
-	if err := sess.Run(cmd); err != nil {
-		var ee *gossh.ExitError
-		if errors.As(err, &ee) {
-			return buf.String(), ee
-		}
-		return buf.String(), err
-	}
-	return buf.String(), nil
 }

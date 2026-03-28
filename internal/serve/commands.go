@@ -47,6 +47,7 @@ func appCmd(sess ssh.Session) *cli.Command {
 		Commands: []*cli.Command{
 			shellCommand(sess),
 			stackCommand(sess),
+			accessCommand(),
 			versionCommand(),
 		},
 	}
