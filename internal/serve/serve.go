@@ -7,11 +7,12 @@ import (
 	"net"
 	"strconv"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/access/keys"
 	"charm.land/log/v2"
 	"charm.land/wish/v2"
 	"charm.land/wish/v2/logging"
 	"github.com/charmbracelet/ssh"
+
+	"altlinux.space/alt-atomic-lab/selenite/internal/access/keys"
 )
 
 type ServeOptions struct {
@@ -33,6 +34,9 @@ func Serve(ctx context.Context, options ServeOptions) error {
 		ssh.AllocatePty(),
 		wish.WithAddress(net.JoinHostPort(host, strconv.Itoa(port))),
 		wish.WithHostKeyPath(hostKeyPath),
+		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
+			return true
+		}),
 		wish.WithMiddleware(
 			func(next ssh.Handler) ssh.Handler {
 				return func(sess ssh.Session) {
@@ -53,17 +57,21 @@ func Serve(ctx context.Context, options ServeOptions) error {
 						return
 					}
 					if len(keys) == 0 {
+						sess.Context().SetValue("is-provision-mode", true)
 						next(sess)
 						return
 					}
 					for _, key := range keys {
 						if ssh.KeysEqual(sess.PublicKey(), key.Pk) {
 							log.Info("new session", "name", key.Name)
+							sess.Context().SetValue("is-provision-mode", false)
+							sess.Context().SetValue("auth-key", key)
 							next(sess)
+							return
 						}
 					}
 					wish.Println(sess, "I don't know who you are!")
-					sess.Exit(1)
+					_ = sess.Exit(1)
 				}
 			},
 			logging.Middleware(),

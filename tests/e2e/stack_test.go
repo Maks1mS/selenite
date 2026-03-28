@@ -18,7 +18,7 @@ const testComposeYAML = `services:
 
 func TestStack(t *testing.T) {
 	t.Parallel()
-	client := bootVM(t)
+	client := bootVMWithProvison(t)
 	const stackName = "test-app"
 
 	run(t, "initial list is empty", func(t *testing.T) {

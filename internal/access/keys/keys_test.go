@@ -8,11 +8,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"altlinux.space/alt-atomic-lab/selenite/internal/lock"
 )
 
 func newTestKeysManager(t *testing.T) *keysManager {
 	t.Helper()
-	return &keysManager{path.Join(t.TempDir(), "keys")}
+	p := path.Join(t.TempDir(), "keys")
+	return &keysManager{p, lock.New(lock.UniqueId("keys-manager", p))}
 }
 
 func TestParseComment(t *testing.T) {

@@ -11,12 +11,7 @@ import (
 
 func TestKeys(t *testing.T) {
 	t.Parallel()
-	client := bootVM(t)
-
-	run(t, "keys empty", func(t *testing.T) {
-		out := mustRunCmd(t, client, "access keys list")
-		assert.Equal(t, "no keys\n", out)
-	})
+	client := bootVMWithProvison(t)
 
 	run(t, "keys add", func(t *testing.T) {
 		keyStr := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILxWe2rXKoiO6W14LYPVfJKzRfJ1f3Jhzxrgjc/D4tU7 user;very important user"
@@ -24,13 +19,13 @@ func TestKeys(t *testing.T) {
 		out := mustRunCmdWithStdin(t, client, "access keys add", strings.NewReader(keyStr))
 		assert.Equal(t, "", out)
 		out = mustRunCmd(t, client, "access keys list")
-		assert.Equal(t, keyStr+"\n", out)
+		assert.Equal(t, client.FormatKey()+"\n"+keyStr+"\n", out)
 	})
 
 	run(t, "keys remove", func(t *testing.T) {
 		out := mustRunCmd(t, client, "access keys remove user")
 		assert.Equal(t, "", out)
 		out = mustRunCmd(t, client, "access keys list")
-		assert.Equal(t, "no keys\n", out)
+		assert.Equal(t, client.FormatKey()+"\n", out)
 	})
 }

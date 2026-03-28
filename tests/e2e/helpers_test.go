@@ -3,6 +3,8 @@
 package e2e
 
 import (
+	"bytes"
+	"crypto/ed25519"
 	"errors"
 	"fmt"
 	"io"
@@ -15,9 +17,15 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
+type testClient struct {
+	ssh        *gossh.Client
+	privateKey ed25519.PrivateKey
+	publicKey  gossh.PublicKey
+}
+
 // bootVM starts a QEMU VM, waits for SSH, and registers cleanup.
 // Each test gets its own VM for clean isolated state.
-func bootVM(t *testing.T) *gossh.Client {
+func bootVM(t *testing.T) *testClient {
 	t.Helper()
 	diskImage := os.Getenv("E2E_DISK_IMAGE")
 	if diskImage == "" {
@@ -36,9 +44,19 @@ func bootVM(t *testing.T) *gossh.Client {
 		cmd.Process.Kill()
 		t.Fatalf("wait for SSH: %v", err)
 	}
-	t.Cleanup(func() { client.Close() })
+	t.Cleanup(func() { client.ssh.Close() })
 
 	return client
+}
+
+func (c *testClient) FormatKey() string {
+	return fmt.Sprintf("%s %s;%s",
+		bytes.TrimRight(
+			gossh.MarshalAuthorizedKey(c.publicKey), "\n",
+		),
+		"provisioner",
+		"Provision key",
+	)
 }
 
 // run runs a named sub-step; if it fails, the parent test is aborted.
@@ -51,9 +69,9 @@ func run(t *testing.T, name string, fn func(t *testing.T)) {
 }
 
 // mustRunCmd executes cmd over SSH and returns output; fatals on error.
-func mustRunCmd(t *testing.T, client *gossh.Client, cmd string) string {
+func mustRunCmd(t *testing.T, client *testClient, cmd string) string {
 	t.Helper()
-	out, err := runCmdWithStdin(t, client, cmd, nil)
+	out, err := runCmdWithStdin(t, client.ssh, cmd, nil)
 	require.NoError(t, err, "command %q\noutput: %s", cmd, out)
 	return out
 }
@@ -82,9 +100,9 @@ func deployStack(t *testing.T, client *gossh.Client, name, composeYAML string) (
 }
 
 // mustDeployStack fatals if deploy fails.
-func mustDeployStack(t *testing.T, client *gossh.Client, name, composeYAML string) {
+func mustDeployStack(t *testing.T, client *testClient, name, composeYAML string) {
 	t.Helper()
-	_, err := deployStack(t, client, name, composeYAML)
+	_, err := deployStack(t, client.ssh, name, composeYAML)
 	require.NoError(t, err, "stack deploy %q", name)
 }
 
@@ -114,9 +132,24 @@ func runCmdWithStdin(t *testing.T, client *gossh.Client, cmd string, stdin io.Re
 	return buf.String(), nil
 }
 
-func mustRunCmdWithStdin(t *testing.T, client *gossh.Client, cmd string, stdin io.Reader) string {
+func mustRunCmdWithStdin(t *testing.T, client *testClient, cmd string, stdin io.Reader) string {
 	t.Helper()
-	out, err := runCmdWithStdin(t, client, cmd, stdin)
+	out, err := runCmdWithStdin(t, client.ssh, cmd, stdin)
 	require.NoError(t, err, "command %q\noutput: %s", cmd, out)
 	return out
+}
+
+func provision(t *testing.T, client *testClient) {
+	t.Helper()
+	mustRunCmd(
+		t,
+		client,
+		"provision",
+	)
+}
+
+func bootVMWithProvison(t *testing.T) *testClient {
+	client := bootVM(t)
+	provision(t, client)
+	return client
 }

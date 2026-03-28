@@ -41,22 +41,7 @@ func startQEMU(diskImage, sshPort string) (*exec.Cmd, error) {
 	return cmd, nil
 }
 
-func waitForSSH(addr string, timeout time.Duration) (*gossh.Client, error) {
-	cfg := sshClientConfig()
-	deadline := time.Now().Add(timeout)
-	var lastErr error
-	for time.Now().Before(deadline) {
-		client, err := gossh.Dial("tcp", addr, cfg)
-		if err == nil {
-			return client, nil
-		}
-		lastErr = err
-		time.Sleep(2 * time.Second)
-	}
-	return nil, fmt.Errorf("SSH not ready after %s: %w", timeout, lastErr)
-}
-
-func sshClientConfig() *gossh.ClientConfig {
+func waitForSSH(addr string, timeout time.Duration) (*testClient, error) {
 	_, privKey, err := ed25519.GenerateKey(nil)
 	if err != nil {
 		panic(err)
@@ -65,9 +50,24 @@ func sshClientConfig() *gossh.ClientConfig {
 	if err != nil {
 		panic(err)
 	}
-	return &gossh.ClientConfig{
+	cfg := &gossh.ClientConfig{
 		User:            "selenite",
 		Auth:            []gossh.AuthMethod{gossh.PublicKeys(signer)},
 		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
 	}
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		ssh, err := gossh.Dial("tcp", addr, cfg)
+		if err == nil {
+			return &testClient{
+				ssh:        ssh,
+				privateKey: privKey,
+				publicKey:  signer.PublicKey(),
+			}, nil
+		}
+		lastErr = err
+		time.Sleep(2 * time.Second)
+	}
+	return nil, fmt.Errorf("SSH not ready after %s: %w", timeout, lastErr)
 }

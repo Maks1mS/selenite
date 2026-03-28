@@ -2,6 +2,7 @@ package keys
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -9,12 +10,15 @@ import (
 
 	"github.com/charmbracelet/ssh"
 	gossh "golang.org/x/crypto/ssh"
+
+	"altlinux.space/alt-atomic-lab/selenite/internal/lock"
 )
 
 var (
 	errKeyWithSameName = errors.New("key with same name already exist")
 	errKeyAlreadyExist = errors.New("key already exist")
 	errKeyNotFound     = errors.New("key not found")
+	errKeyIsTheLast    = errors.New("key is the last one, so it cannot be deleted")
 )
 
 type Key struct {
@@ -41,14 +45,17 @@ func KeyFromString(s string) (Key, error) {
 }
 
 type keysManager struct {
-	keysFile string
+	keysFile     string
+	keysFileLock *lock.Lock
 }
 
 var DefaultKeysFile = "/var/lib/selenite-controller/.ssh/authorized_keys"
 
 func NewKeysManager() *keysManager {
+	h := sha256.Sum256([]byte(DefaultKeysFile))
 	return &keysManager{
 		DefaultKeysFile,
+		lock.New(fmt.Sprintf("keysManager-%x", h[:4])),
 	}
 }
 
@@ -91,6 +98,11 @@ func parseComment(comment string) (Key, error) {
 }
 
 func (m *keysManager) Add(keyStr string) (err error) {
+	_ = m.keysFileLock.Lock()
+	defer func() {
+		_ = m.keysFileLock.Unlock()
+	}()
+
 	keys, err := m.List()
 	if err != nil {
 		return fmt.Errorf("list: %w", err)
@@ -128,18 +140,29 @@ func (m *keysManager) Add(keyStr string) (err error) {
 }
 
 func (m *keysManager) Remove(name string) (err error) {
+	_ = m.keysFileLock.Lock()
+	defer func() {
+		_ = m.keysFileLock.Unlock()
+	}()
+
 	keys, err := m.List()
 	if err != nil {
 		return fmt.Errorf("list: %w", err)
 	}
 
-	f, err := os.OpenFile(m.keysFile+".tmp", os.O_CREATE|os.O_WRONLY, 0o600)
+	if len(keys) == 1 {
+		return errKeyIsTheLast
+	}
+
+	tmpFile := m.keysFile + ".tmp"
+	f, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_WRONLY, 0o600) //gosec:disable G304 -- Expected
 	if err != nil {
 		return fmt.Errorf("read keysFile: %w", err)
 	}
 	defer func() {
-		if cerr := f.Close(); cerr != nil && err == nil {
-			err = cerr
+		_ = f.Close()
+		if err != nil {
+			_ = os.Remove(tmpFile)
 		}
 	}()
 

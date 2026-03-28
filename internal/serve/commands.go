@@ -10,6 +10,9 @@ import (
 	"github.com/charmbracelet/ssh"
 	"github.com/urfave/cli/v3"
 
+	gossh "golang.org/x/crypto/ssh"
+
+	"altlinux.space/alt-atomic-lab/selenite/internal/access/keys"
 	"altlinux.space/alt-atomic-lab/selenite/internal/shell"
 	"altlinux.space/alt-atomic-lab/selenite/internal/version"
 )
@@ -47,8 +50,21 @@ func appCmd(sess ssh.Session) *cli.Command {
 		Commands: []*cli.Command{
 			shellCommand(sess),
 			stackCommand(sess),
+			provisionCommand(sess),
 			accessCommand(),
 			versionCommand(),
+		},
+		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
+			isProvision, _ := ctx.Value("is-provision-mode").(bool)
+			if !isProvision {
+				return ctx, nil
+			}
+
+			if c.Args().Get(0) == "provision" {
+				return ctx, nil
+			}
+
+			return ctx, fmt.Errorf("provision mode: only 'provision' command is allowed")
 		},
 	}
 	prepareCmdForWish(root, sess)
@@ -98,6 +114,29 @@ func shellCommand(sess ssh.Session) *cli.Command {
 				return errors.New("requires an active PTY")
 			}
 			return shell.Shell(ctx, sess)
+		},
+	}
+}
+
+func provisionCommand(sess ssh.Session) *cli.Command {
+	return &cli.Command{
+		Name:  "provision",
+		Usage: "Provision",
+		Action: func(ctx context.Context, c *cli.Command) error {
+			err := keys.NewKeysManager().Add(
+				fmt.Sprintf("%s %s;%s",
+					bytes.TrimRight(
+						gossh.MarshalAuthorizedKey(sess.PublicKey()), "\n",
+					),
+					"provisioner",
+					"Provision key",
+				),
+			)
+			if err != nil {
+				return fmt.Errorf("add: %w", err)
+			}
+
+			return nil
 		},
 	}
 }

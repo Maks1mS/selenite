@@ -10,7 +10,7 @@ import (
 
 func TestMiscCommandsWorks(t *testing.T) {
 	t.Parallel()
-	client := bootVM(t)
+	client := bootVMWithProvison(t)
 
 	run(t, "version works", func(t *testing.T) {
 		out := mustRunCmd(t, client, "version")
