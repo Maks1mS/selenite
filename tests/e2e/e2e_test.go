@@ -10,8 +10,6 @@ import (
 	"os/exec"
 	"strconv"
 	"time"
-
-	gossh "golang.org/x/crypto/ssh"
 )
 
 func getFreePort() (string, error) {
@@ -46,28 +44,17 @@ func waitForSSH(addr string, timeout time.Duration) (*testClient, error) {
 	if err != nil {
 		panic(err)
 	}
-	signer, err := gossh.NewSignerFromKey(privKey)
+	cfg, signer, err := makeSSHConfig(privKey)
 	if err != nil {
 		panic(err)
 	}
-	cfg := &gossh.ClientConfig{
-		User:            "selenite",
-		Auth:            []gossh.AuthMethod{gossh.PublicKeys(signer)},
-		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
+	ssh, err := dialSSH(addr, cfg, timeout)
+	if err != nil {
+		return nil, err
 	}
-	deadline := time.Now().Add(timeout)
-	var lastErr error
-	for time.Now().Before(deadline) {
-		ssh, err := gossh.Dial("tcp", addr, cfg)
-		if err == nil {
-			return &testClient{
-				ssh:        ssh,
-				privateKey: privKey,
-				publicKey:  signer.PublicKey(),
-			}, nil
-		}
-		lastErr = err
-		time.Sleep(2 * time.Second)
-	}
-	return nil, fmt.Errorf("SSH not ready after %s: %w", timeout, lastErr)
+	return &testClient{
+		ssh:        ssh,
+		privateKey: privKey,
+		publicKey:  signer.PublicKey(),
+	}, nil
 }

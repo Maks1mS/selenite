@@ -20,6 +20,12 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -o /selenite-podman-executor \
     ./cmd/selenite-podman-executor
 
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-s -w" \
+    -trimpath \
+    -o /selenite-machine-executor \
+    ./cmd/selenite-machine-executor
+
 FROM altlinux.space/alt-atomic/core-minimal/nightly:20260323@sha256:0b0fef657304ca2531ba5729b5d0ee9c5cfb279d3ca3a7b784a52027521cf0ab as base
 
 ARG DEV
@@ -37,6 +43,9 @@ COPY --from=selenite-controller /selenite-controller /usr/bin/selenite-controlle
 COPY --from=selenite-controller /selenite-podman-executor /usr/libexec/selenite-podman-executor
 RUN chown root:_selenite-controller /usr/libexec/selenite-podman-executor && \
     chmod 4750 /usr/libexec/selenite-podman-executor
+COPY --from=selenite-controller /selenite-machine-executor /usr/libexec/selenite-machine-executor
+RUN chown root:_selenite-controller /usr/libexec/selenite-machine-executor && \
+    chmod 4750 /usr/libexec/selenite-machine-executor
 
 WORKDIR /
 CMD ["/sbin/init"]

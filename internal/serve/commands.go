@@ -52,6 +52,7 @@ func appCmd(sess ssh.Session) *cli.Command {
 			stackCommand(sess),
 			provisionCommand(sess),
 			accessCommand(),
+			machineCommands(),
 			versionCommand(),
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {

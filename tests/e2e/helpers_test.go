@@ -19,8 +19,35 @@ import (
 
 type testClient struct {
 	ssh        *gossh.Client
+	addr       string
 	privateKey ed25519.PrivateKey
 	publicKey  gossh.PublicKey
+}
+
+func makeSSHConfig(privKey ed25519.PrivateKey) (*gossh.ClientConfig, gossh.Signer, error) {
+	signer, err := gossh.NewSignerFromKey(privKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &gossh.ClientConfig{
+		User:            "selenite",
+		Auth:            []gossh.AuthMethod{gossh.PublicKeys(signer)},
+		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
+	}, signer, nil
+}
+
+func dialSSH(addr string, cfg *gossh.ClientConfig, timeout time.Duration) (*gossh.Client, error) {
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		ssh, err := gossh.Dial("tcp", addr, cfg)
+		if err == nil {
+			return ssh, nil
+		}
+		lastErr = err
+		time.Sleep(2 * time.Second)
+	}
+	return nil, fmt.Errorf("SSH not ready after %s: %w", timeout, lastErr)
 }
 
 // bootVM starts a QEMU VM, waits for SSH, and registers cleanup.
@@ -39,14 +66,45 @@ func bootVM(t *testing.T) *testClient {
 	require.NoError(t, err, "start QEMU")
 	t.Cleanup(func() { cmd.Process.Kill() })
 
-	client, err := waitForSSH("127.0.0.1:"+sshPort, 120*time.Second)
+	addr := "127.0.0.1:" + sshPort
+	client, err := waitForSSH(addr, 120*time.Second)
 	if err != nil {
 		cmd.Process.Kill()
 		t.Fatalf("wait for SSH: %v", err)
 	}
+	client.addr = addr
 	t.Cleanup(func() { client.ssh.Close() })
 
 	return client
+}
+
+func (c *testClient) reconnect(t *testing.T, timeout time.Duration) {
+	t.Helper()
+	c.ssh.Close()
+	cfg, _, err := makeSSHConfig(c.privateKey)
+	if err != nil {
+		t.Fatalf("reconnect: create signer: %v", err)
+	}
+	deadline := time.Now().Add(timeout)
+
+	// wait for the VM to go offline
+	offlineDeadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(offlineDeadline) {
+		conn, err := gossh.Dial("tcp", c.addr, cfg)
+		if err != nil {
+			break // VM is shutting down
+		}
+		conn.Close()
+		time.Sleep(2 * time.Second)
+	}
+
+	// wait for the VM to come back online
+	ssh, err := dialSSH(c.addr, cfg, time.Until(deadline))
+	if err != nil {
+		t.Fatalf("reconnect: %v", err)
+	}
+	c.ssh = ssh
+	t.Cleanup(func() { ssh.Close() })
 }
 
 func (c *testClient) FormatKey() string {
