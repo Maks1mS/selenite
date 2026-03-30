@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+vars:
+  VM_SSH_PORT: 23234
+  VM_USER: selenite
+  VM_DISK: /var/tmp/selenite/disk.raw
+  VM_PIDFILE: /tmp/selenite-vm.pid
+  PROVISION_KEY: /tmp/selenite-provision-key
+  KNOWN_HOSTS: /tmp/selenite-known-hosts
+  SSH_OPTS: >-
+    -i {{.PROVISION_KEY}}
+    -p {{.VM_SSH_PORT}}
+    -o StrictHostKeyChecking=accept-new
+    -o UserKnownHostsFile={{.KNOWN_HOSTS}}
+    -t
+
+
+tasks:
+  _prepare:
+    internal: true
+    cmds:
+      - "./scripts/prepare-e2e.sh"
+
+  _keygen:
+    silent: true
+    internal: true
+    cmds:
+      - |
+        if [ ! -f "{{.PROVISION_KEY}}" ]; then
+          ssh-keygen -t ed25519 -f "{{.PROVISION_KEY}}" -N '' -q -C 'selenite-provision'
+        fi
+
+  start-vm:
+    desc: "Start VM in background"
+    deps: [_prepare, _keygen]
+    cmds:
+      - |
+        rm -f "{{.KNOWN_HOSTS}}"
+        qemu-system-x86_64 \
+          -enable-kvm \
+          -m 2048M \
+          -drive file={{.VM_DISK}},format=raw,if=virtio,snapshot=on \
+          -netdev user,id=net0,hostfwd=tcp::{{.VM_SSH_PORT}}-:{{.VM_SSH_PORT}} \
+          -device virtio-net-pci,netdev=net0 \
+          -daemonize \
+          -pidfile "{{.VM_PIDFILE}}"
+        echo "=== VM started ==="
+
+  provision:
+      desc: "Wait for SSH and provision the VM"
+      deps: [_keygen]
+      vars:
+        TIMEOUT: '120'
+      cmds:
+        - |
+          echo "=== Waiting for SSH port... ==="
+          DEADLINE=$(( $(date +%s) + {{.TIMEOUT}} ))
+          until bash -c "echo > /dev/tcp/localhost/{{.VM_SSH_PORT}}" 2>/dev/null; do
+            [ "$(date +%s)" -ge "$DEADLINE" ] && echo "=== Timed out ===" && exit 1
+            sleep 2
+          done
+  
+          sleep 1
+  
+          echo "=== SSH ready, provisioning... ==="
+          ssh \
+            -i {{.PROVISION_KEY}} \
+            -p {{.VM_SSH_PORT}} \
+            -o StrictHostKeyChecking=accept-new \
+            -o UserKnownHostsFile={{.KNOWN_HOSTS}} \
+            {{.VM_USER}}@localhost provision \
+            || { echo "=== Provisioning failed ==="; exit 1; }
+  
+          echo "=== Provisioning done ==="
+
+  ssh:
+    desc: "Run selenite SSH command (e.g. task dev:ssh -- shell)"
+    deps: [_keygen]
+    interactive: true
+    silent: true
+    cmds:
+      - ssh {{.SSH_OPTS}} {{.VM_USER}}@localhost {{.CLI_ARGS}}

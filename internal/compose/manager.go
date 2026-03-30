@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
 )
@@ -34,7 +35,7 @@ func (m *Manager) stackPath(name string) string {
 }
 
 func (m *Manager) run(ctx context.Context, w io.Writer, workDir string, args ...string) error {
-	if err := m.runner.Run(ctx, w, ExecutorBin, append([]string{workDir}, args...)...); err != nil {
+	if err := m.runner.Run(ctx, ExecutorBin, slices.Concat([]string{workDir}, args), executil.WithCombinedOutput(w)); err != nil {
 		return fmt.Errorf("run: %w", err)
 	}
 	return nil
@@ -49,7 +50,8 @@ func (m *Manager) Deploy(ctx context.Context, name string, r io.Reader, w io.Wri
 	// group write is required: stacks dir has sgid 2770
 	// (_selenite-podman-executor:_selenite-workloads),
 	// so group members must be able to traverse it
-	if err := os.MkdirAll(path, 0o770); err != nil { //gosec:disable G301 -- Expected
+	//gosec:disable G301 -- Expected
+	if err := os.MkdirAll(path, 0o770); err != nil {
 		return fmt.Errorf("create stack dir: %w", err)
 	}
 

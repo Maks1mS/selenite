@@ -2,7 +2,9 @@ package machine
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -28,7 +30,7 @@ func New() *machineManager {
 }
 
 func (m *machineManager) run(ctx context.Context, w io.Writer, args ...string) error {
-	if err := m.runner.Run(ctx, w, ExecutorBin, args...); err != nil {
+	if err := m.runner.Run(ctx, ExecutorBin, args, executil.WithCombinedOutput(w)); err != nil {
 		return fmt.Errorf("run: %w", err)
 	}
 	return nil
@@ -74,64 +76,108 @@ func (m *machineManager) Stats(_ context.Context, w io.Writer) error {
 	return nil
 }
 
-func formatUptime(secs int) string {
-	days := secs / 86400
-	hours := (secs % 86400) / 3600
-	mins := (secs % 3600) / 60
-	s := secs % 60
-
-	var parts []string
-	if days > 0 {
-		parts = append(parts, fmt.Sprintf("%d days", days))
-	}
-	if hours > 0 {
-		parts = append(parts, fmt.Sprintf("%d hours", hours))
-	}
-	if mins > 0 {
-		parts = append(parts, fmt.Sprintf("%d minutes", mins))
-	}
-	parts = append(parts, fmt.Sprintf("%d seconds", s))
-	return strings.Join(parts, " ")
+type imageInfoResult struct {
+	Data struct {
+		BootedImage struct {
+			Image struct {
+				Status struct {
+					Booted struct {
+						Image struct {
+							Image struct {
+								Image     string `json:"image"`
+								Transport string `json:"transport"`
+							} `json:"image"`
+							ImageDigest string `json:"imageDigest"`
+							Timestamp   string `json:"timestamp"`
+							Version     any    `json:"version"`
+						} `json:"image"`
+					} `json:"booted"`
+				} `json:"status"`
+			} `json:"image"`
+			Status string `json:"status"`
+		} `json:"bootedImage"`
+	} `json:"data"`
+	Error any `json:"error"`
 }
 
-func readMeminfo() (totalBytes, availBytes uint64, err error) {
-	f, err := os.Open("/proc/meminfo")
-	if err != nil {
-		return 0, 0, fmt.Errorf("read /proc/meminfo: %w", err)
+func (m *machineManager) imageInfo(ctx context.Context) (imageInfoResult, error) {
+	var imgBuf bytes.Buffer
+	if err := m.runner.Run(ctx, ExecutorBin, []string{"image-info"}, executil.WithCombinedOutput(&imgBuf)); err != nil {
+		return imageInfoResult{}, fmt.Errorf("info: image: %w", err)
 	}
-	defer func() {
-		_ = f.Close()
-	}()
+	var imgResult imageInfoResult
+	if err := json.Unmarshal(imgBuf.Bytes(), &imgResult); err != nil {
+		return imageInfoResult{}, fmt.Errorf("info: parse image: %w", err)
+	}
+	return imgResult, nil
+}
 
-	var totalKB, availKB uint64
+func (m *machineManager) Info(ctx context.Context, w io.Writer) error {
+	cpuModel, cpuCores, err := readCPUInfo()
+	if err != nil {
+		return fmt.Errorf("info: cpu: %w", err)
+	}
+
+	totalMem, availMem, err := readMeminfo()
+	if err != nil {
+		return fmt.Errorf("info: mem: %w", err)
+	}
+
+	kernel, err := os.ReadFile("/proc/sys/kernel/osrelease")
+	if err != nil {
+		return fmt.Errorf("info: kernel: %w", err)
+	}
+
+	podmanVer := podmanVersion(ctx, m.runner)
+
+	imgResult, err := m.imageInfo(ctx)
+	if err != nil {
+		return fmt.Errorf("imageInfo: %w", err)
+	}
+
+	booted := imgResult.Data.BootedImage
+	img := booted.Image.Status.Booted.Image
+
+	_, _ = fmt.Fprintf(w, "CPU:            %s (%d cores)\n", cpuModel, cpuCores)
+	_, _ = fmt.Fprintf(w, "Memory:         %s / %s\n", formatBytes(availMem), formatBytes(totalMem))
+	_, _ = fmt.Fprintf(w, "Kernel:         %s\n", strings.TrimSpace(string(kernel)))
+	_, _ = fmt.Fprintf(w, "Podman:         %s\n", podmanVer.Version)
+	_, _ = fmt.Fprintf(w, "Podman Compose: %s\n", podmanVer.ComposeVersion)
+	_, _ = fmt.Fprintf(w, "Image Status:   %s\n", booted.Status)
+	if img.Image.Image != "" {
+		_, _ = fmt.Fprintf(w, "Image:          %s:%s\n", img.Image.Transport, img.Image.Image)
+	}
+	if img.ImageDigest != "" {
+		_, _ = fmt.Fprintf(w, "Digest:         %s\n", img.ImageDigest)
+	}
+	if img.Timestamp != "" {
+		_, _ = fmt.Fprintf(w, "Timestamp:      %s\n", img.Timestamp)
+	}
+	return nil
+}
+
+func readCPUInfo() (model string, cores int, err error) {
+	f, err := os.Open("/proc/cpuinfo")
+	if err != nil {
+		return "", 0, fmt.Errorf("open /proc/cpuinfo: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		var key string
-		var val uint64
-		if _, err := fmt.Sscanf(line, "%s %d kB", &key, &val); err != nil {
-			continue
-		}
-		switch key {
-		case "MemTotal:":
-			totalKB = val
-		case "MemAvailable:":
-			availKB = val
+		if strings.HasPrefix(line, "model name") {
+			if parts := strings.SplitN(line, ":", 2); len(parts) == 2 {
+				model = strings.TrimSpace(parts[1])
+			}
+		} else if strings.HasPrefix(line, "processor") {
+			cores++
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return 0, 0, fmt.Errorf("scanner: %w", err)
+		return "", 0, fmt.Errorf("scanner: %w", err)
 	}
-	return totalKB * 1024, availKB * 1024, nil
-}
-
-func formatBytes(b uint64) string {
-	gb := float64(b) / (1024 * 1024 * 1024)
-	if gb >= 1 {
-		return fmt.Sprintf("%.1fG", gb)
-	}
-	mb := float64(b) / (1024 * 1024)
-	return fmt.Sprintf("%.1fM", mb)
+	return model, cores, nil
 }
 
 func (m *machineManager) Reboot(ctx context.Context, w io.Writer) error {

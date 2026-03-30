@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
 )
 
 type runCall struct {
@@ -22,7 +24,7 @@ type mockRunner struct {
 	err   error
 }
 
-func (m *mockRunner) Run(_ context.Context, _ io.Writer, name string, args ...string) error {
+func (m *mockRunner) Run(_ context.Context, name string, args []string, _ ...executil.Option) error {
 	m.calls = append(m.calls, runCall{name, args})
 	return m.err
 }

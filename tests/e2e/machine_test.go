@@ -46,6 +46,10 @@ func TestMachine(t *testing.T) {
 	t.Parallel()
 	client := bootVMWithProvison(t)
 
+	run(t, "'machine info' works", func(t *testing.T) {
+		mustRunCmd(t, client, "machine info")
+	})
+
 	var uptimeBefore int
 	run(t, "stats returns uptime", func(t *testing.T) {
 		time.Sleep(time.Second * 40)

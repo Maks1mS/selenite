@@ -13,8 +13,19 @@ func machineCommands() *cli.Command {
 		Name:  "machine",
 		Usage: "Manage machine",
 		Commands: []*cli.Command{
+			infoCommand(),
 			statsCommand(),
 			rebootCommand(),
+		},
+	}
+}
+
+func infoCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "info",
+		Usage: "Show machine info",
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return machine.New().Info(ctx, c.Writer)
 		},
 	}
 }

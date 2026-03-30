@@ -3,7 +3,12 @@
 version: '3'
 
 vars:
-  GOLANGCI_LINT_BIN: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.2
+  GOLANGCI_LINT_BIN: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.2
+
+includes:
+  dev:
+    taskfile: ./taskfiles/dev.yml
+    dir: .
 
 tasks:
   fmt:
@@ -13,23 +18,16 @@ tasks:
 
   lint:
     desc: "Run golangci-lint"
+    preconditions:
+      - sh: "test -f go.mod"
+        msg: "go.mod not found — run from project root"
     cmds:
       - "{{.GOLANGCI_LINT_BIN}} run"
 
-  run-vm:
-    desc: "Start VM for interactive debugging"
-    cmds:
-      - "./scripts/prepare-e2e.sh"
-      - |
-        echo "=== VM starting — Selenite SSH: ssh -p 23234 selenite@localhost ==="
-        qemu-system-x86_64 \
-          -enable-kvm \
-          -m 2048M \
-          -drive file=/var/tmp/selenite/disk.raw,format=raw,if=virtio,snapshot=on \
-          -netdev user,id=net0,hostfwd=tcp::23234-:23234 \
-          -device virtio-net-pci,netdev=net0
-
   test-e2e:
+    desc: "Run e2e tests"
+    vars:
+      E2E_PARALLELISM: '4'
     cmds:
       - "./scripts/prepare-e2e.sh"
-      - "go test -tags=e2e -count=1 -p 4 -v ./tests/e2e/"
+      - go test -tags=e2e -count=1 -p {{.E2E_PARALLELISM}} -v ./tests/e2e/
