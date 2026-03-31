@@ -40,12 +40,17 @@ func Serve(ctx context.Context, options ServeOptions) error {
 		wish.WithMiddleware(
 			func(next ssh.Handler) ssh.Handler {
 				return func(sess ssh.Session) {
+					ctx, cancel := context.WithCancel(sess.Context())
+
 					app := appCmd(sess)
-					if err := app.Run(sess.Context(), append([]string{""}, sess.Command()...)); err != nil {
+					if err := app.Run(ctx, append([]string{""}, sess.Command()...)); err != nil {
 						_, _ = fmt.Fprintf(app.ErrWriter, "Error: %s\n", err)
+						cancel()
 						_ = sess.Exit(1)
 						return
 					}
+
+					cancel()
 					next(sess)
 				}
 			},

@@ -188,3 +188,24 @@ func (m *machineManager) Reboot(ctx context.Context, w io.Writer) error {
 	_, _ = fmt.Fprintln(w, "Rebooting...")
 	return nil
 }
+
+func (m *machineManager) Upgrade(ctx context.Context, w io.Writer) error {
+	if err := m.run(ctx, w, "bootc-upgrade"); err != nil {
+		return fmt.Errorf("upgrade: %w", err)
+	}
+	return nil
+}
+
+func (m *machineManager) Rollback(ctx context.Context, w io.Writer) error {
+	if err := m.run(ctx, w, "bootc-rollback"); err != nil {
+		return fmt.Errorf("rollback: %w", err)
+	}
+	return nil
+}
+
+func (m *machineManager) Switch(ctx context.Context, w io.Writer, image string) error {
+	if err := m.run(ctx, w, "bootc-switch", image); err != nil {
+		return fmt.Errorf("switch: %w", err)
+	}
+	return nil
+}
