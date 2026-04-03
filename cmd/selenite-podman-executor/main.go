@@ -9,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 
+	"altlinux.space/alt-atomic-lab/selenite/internal/cmdutils"
 	"altlinux.space/alt-atomic-lab/selenite/internal/compose"
 )
 
@@ -25,16 +26,11 @@ var allowedSubcommands = map[string]struct{}{
 	"pull": {},
 }
 
-func fatal(format string, a ...any) {
-	fmt.Fprintf(os.Stderr, format, a...)
-	os.Exit(1)
-}
-
 func main() {
 	runtime.LockOSThread()
 
 	if len(os.Args) < 3 {
-		fatal("usage: selenite-podman-executor <stack-path> <subcommand> [args...]\n")
+		cmdutils.Fatal("usage: selenite-podman-executor <stack-path> <subcommand> [args...]\n")
 	}
 
 	stackPath := os.Args[1]
@@ -42,34 +38,34 @@ func main() {
 	extra := os.Args[3:]
 
 	if !strings.HasPrefix(stackPath, compose.BaseStackDir+"/") {
-		fatal("invalid stack path: %s\n", stackPath)
+		cmdutils.Fatal("invalid stack path: %s\n", stackPath)
 	}
 
 	if _, has := allowedSubcommands[subcommand]; !has {
-		fatal("unknown subcommand: %s\n", subcommand)
+		cmdutils.Fatal("unknown subcommand: %s\n", subcommand)
 	}
 
 	u, err := user.Lookup(executorUser)
 	if err != nil {
-		fatal("user not found: %s\n", executorUser)
+		cmdutils.Fatal("user not found: %s\n", executorUser)
 	}
 	uid, _ := strconv.Atoi(u.Uid)
 	gid, _ := strconv.Atoi(u.Gid)
 
 	if err := syscall.Setresgid(gid, gid, gid); err != nil {
-		fatal("setresgid: %v\n", err)
+		cmdutils.Fatal("setresgid: %v\n", err)
 	}
 	if err := syscall.Setresuid(uid, uid, uid); err != nil {
-		fatal("setresuid: %v\n", err)
+		cmdutils.Fatal("setresuid: %v\n", err)
 	}
 
 	if err := os.Chdir(stackPath); err != nil {
-		fatal("chdir %s: %v\n", stackPath, err)
+		cmdutils.Fatal("chdir %s: %v\n", stackPath, err)
 	}
 
 	args := append([]string{"podman-compose", subcommand}, extra...)
 	if err := syscall.Exec(podmanCompose, args, buildEnv(u)); err != nil { //nolint:gosec // podmanCompose is a const, subcommand is allow-listed
-		fatal("exec: %v\n", err)
+		cmdutils.Fatal("exec: %v\n", err)
 	}
 }
 
