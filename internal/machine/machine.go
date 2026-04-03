@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
+	config "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
 )
 
 const (
@@ -21,11 +22,13 @@ const (
 
 type machineManager struct {
 	runner executil.Runner
+	store  config.Store
 }
 
 func New() *machineManager {
 	return &machineManager{
 		runner: executil.ExecRunner{},
+		store:  config.ConfigStore{},
 	}
 }
 
@@ -207,5 +210,33 @@ func (m *machineManager) Switch(ctx context.Context, w io.Writer, image string) 
 	if err := m.run(ctx, w, "bootc-switch", image); err != nil {
 		return fmt.Errorf("switch: %w", err)
 	}
+	return nil
+}
+
+func (m *machineManager) ApplyConfig(ctx context.Context, r io.Reader, w io.Writer) error {
+	buf, err := io.ReadAll(r)
+	if err != nil {
+		return fmt.Errorf("ReadAll: %w", err)
+	}
+
+	cfg, err := config.ParseMachineConfig(buf)
+	if err != nil {
+		return fmt.Errorf("ParseMachineConfig: %w", err)
+	}
+
+	prev, err := m.store.Load()
+	if err != nil {
+		return fmt.Errorf("load previous config: %w", err)
+	}
+
+	applier := config.NewApplier(cfg, prev, m.runner)
+	if err := applier.Apply(ctx); err != nil {
+		return fmt.Errorf("Apply: %w", err)
+	}
+
+	if err := m.store.Save(cfg); err != nil {
+		return fmt.Errorf("persist config: %w", err)
+	}
+
 	return nil
 }

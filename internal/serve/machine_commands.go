@@ -24,6 +24,7 @@ func machineCommands() *cli.Command {
 			upgradeCommand(),
 			rollbackCommand(),
 			switchCommand(),
+			configCommand(),
 		},
 	}
 }
@@ -88,6 +89,41 @@ func switchCommand() *cli.Command {
 				return errImageRequired
 			}
 			return machine.New().Switch(ctx, c.Writer, c.Args().First())
+		},
+	}
+}
+
+func configCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "config",
+		Usage: "Machine config",
+		Commands: []*cli.Command{
+			applyConfigCommand(),
+		},
+	}
+}
+
+func applyConfigCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "apply",
+		Usage: "Apply machine config",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name: "reboot",
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			m := machine.New()
+			if err := m.ApplyConfig(ctx, c.Reader, c.Writer); err != nil {
+				return err
+			}
+
+			if c.Bool("reboot") {
+				if err := m.Reboot(ctx, c.Writer); err != nil {
+					return err
+				}
+			}
+			return nil
 		},
 	}
 }

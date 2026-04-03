@@ -5,6 +5,7 @@ package e2e
 import (
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -48,6 +49,16 @@ func TestMachine(t *testing.T) {
 
 	run(t, "'machine info' works", func(t *testing.T) {
 		mustRunCmd(t, client, "machine info")
+	})
+
+	run(t, "'machine config apply' works", func(t *testing.T) {
+		cfg := `
+sysctl:
+  params:
+    net.ipv4.ip_unprivileged_port_start: 80
+`
+
+		mustRunCmdWithStdin(t, client, "machine apply", strings.NewReader(cfg))
 	})
 
 	var uptimeBefore int
