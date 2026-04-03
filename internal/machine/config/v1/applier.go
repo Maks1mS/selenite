@@ -12,6 +12,7 @@ import (
 const sysctlHelperBin = "/usr/libexec/selenite-controller/sysctl-helper"
 
 type ModuleApplier interface {
+	Name() string
 	Validate(ctx context.Context) error
 	Apply(ctx context.Context) error
 	Rollback(ctx context.Context) error
@@ -22,7 +23,7 @@ type Applier struct {
 	modules []ModuleApplier
 }
 
-func NewApplier(cfg *MachineConfig, prev *MachineConfig, r executil.Runner) *Applier {
+func NewApplier(cfg, prev *MachineConfig, r executil.Runner) *Applier {
 	var prevSysctl map[string]string
 	if prev != nil {
 		prevSysctl = prev.Sysctl.Params
@@ -47,7 +48,7 @@ func (a *Applier) Apply(ctx context.Context) error {
 			for i := len(applied) - 1; i >= 0; i-- {
 				_ = applied[i].Rollback(ctx)
 			}
-			return err
+			return fmt.Errorf("%s apply: %w", m.Name(), err)
 		}
 		applied = append(applied, m)
 	}
@@ -63,6 +64,10 @@ type SysctlApplier struct {
 
 func NewSysctlApplier(newParams, prevParams map[string]string, r executil.Runner) *SysctlApplier {
 	return &SysctlApplier{newParams: newParams, prevParams: prevParams, r: r}
+}
+
+func (a *SysctlApplier) Name() string {
+	return "sysctl"
 }
 
 func (a *SysctlApplier) Validate(_ context.Context) error {

@@ -6,15 +6,16 @@ import (
 	"strings"
 	"testing"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/executil/mocks"
-	config "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"altlinux.space/alt-atomic-lab/selenite/internal/executil/mocks"
+	config "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
 )
 
 type noopStore struct{}
 
-func (noopStore) Load() (*config.MachineConfig, error) { return nil, nil }
+func (noopStore) Load() (*config.MachineConfig, error) { return &config.MachineConfig{}, nil }
 func (noopStore) Save(*config.MachineConfig) error     { return nil }
 
 func newTestMachine(t *testing.T, runner *mocks.MockRunner) *machineManager {

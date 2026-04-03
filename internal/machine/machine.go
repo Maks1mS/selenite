@@ -221,7 +221,7 @@ func (m *machineManager) ApplyConfig(ctx context.Context, r io.Reader, w io.Writ
 
 	cfg, err := config.ParseMachineConfig(buf)
 	if err != nil {
-		return fmt.Errorf("ParseMachineConfig: %w", err)
+		return fmt.Errorf("parseMachineConfig: %w", err)
 	}
 
 	prev, err := m.store.Load()
@@ -231,7 +231,7 @@ func (m *machineManager) ApplyConfig(ctx context.Context, r io.Reader, w io.Writ
 
 	applier := config.NewApplier(cfg, prev, m.runner)
 	if err := applier.Apply(ctx); err != nil {
-		return fmt.Errorf("Apply: %w", err)
+		return fmt.Errorf("apply: %w", err)
 	}
 
 	if err := m.store.Save(cfg); err != nil {

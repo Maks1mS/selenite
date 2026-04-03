@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
@@ -61,8 +62,17 @@ func writeConf(lines []string) error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return err
+		if err != nil {
+			return fmt.Errorf("remove: %w", err)
+		}
+		return nil
 	}
 	content := strings.Join(lines, "\n") + "\n"
-	return os.WriteFile(sysctlConf, []byte(content), 0o644)
+
+	//gosec:disable G306 -- Expected
+	if err := os.WriteFile(sysctlConf, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("sysctlConf: %w", err)
+	}
+
+	return nil
 }
