@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  IMAGE_NAME: alt-atomic-lab/selenite
+  IMAGE_NAME: alt-atomic-lab/selenite/cloud
   REGISTRY: altlinux.space
   CACHE_IMAGE: altlinux.space/alt-atomic-lab/selenite-cache
   LOCAL_BUILD_NAME: localhost/selenite
@@ -43,7 +43,7 @@ jobs:
             . 
 
       - name: Push images
-        uses: alt-atomic/actions/push-and-sign@9553cbf63780d0252b503904b7e3ca35f566a943
+        uses: alt-atomic/actions/push-and-sign@6a9494b07dbc1c84c85efc2aca800f86135c0acb
         with:
           registry: ${{ env.REGISTRY }}
           registry-username: "<token>"
@@ -51,3 +51,4 @@ jobs:
           image-name: ${{ env.IMAGE_NAME }}
           image-tag: ${{ steps.version.outputs.value }}
           local-build-name: ${{ env.LOCAL_BUILD_NAME }}
+          image-aliases: nightly
