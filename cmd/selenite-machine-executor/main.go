@@ -51,7 +51,7 @@ func main() {
 		if len(os.Args) < 3 {
 			cmdutils.Fatal("switch: image argument required\n")
 		}
-		//gosec:disable G204 -- Expected
+		//gosec:disable G204,G702 -- Expected
 		if err := syscall.Exec(bootcPath, []string{"bootc", "switch", os.Args[2]}, env); err != nil {
 			cmdutils.Fatal("bootc-switch: %v\n", err)
 		}

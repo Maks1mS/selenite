@@ -3,7 +3,7 @@
 version: '3'
 
 vars:
-  GOLANGCI_LINT_BIN: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.2
+  GOLANGCI_LINT_BIN: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@8f3b0c7ed018e57905fbd873c697e0b1ede605a5 # v2.11.4
 
 includes:
   dev:
@@ -23,6 +23,11 @@ tasks:
         msg: "go.mod not found — run from project root"
     cmds:
       - "{{.GOLANGCI_LINT_BIN}} run"
+
+  test-unit:
+    desc: "Run unit tests"
+    cmds:
+      - go test -v ./...
 
   test-e2e:
     desc: "Run e2e tests"
