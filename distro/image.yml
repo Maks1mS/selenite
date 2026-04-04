@@ -10,20 +10,7 @@ modules:
     type: shell
     body:
       command: |
-        groupadd -r -f _selenite-workloads > /dev/null 2>&1 ||:
-
-        groupadd -r -f _selenite-controller > /dev/null 2>&1 ||:
-        useradd -r -g _selenite-controller -G _selenite-workloads -s /dev/null -c "selenite-controller services" -M -d /var/lib/selenite-controller _selenite-controller > /dev/null 2>&1 ||:
-        mkdir -p /var/lib/selenite-controller
-        chown _selenite-controller:_selenite-controller /var/lib/selenite-controller
-
-        groupadd -r -f _selenite-podman-executor > /dev/null 2>&1 ||:
-        useradd -r -g _selenite-podman-executor -G _selenite-workloads -s /dev/null -c "selenite podman executor" -M -d /var/lib/selenite-podman-executor _selenite-podman-executor > /dev/null 2>&1 ||:
-
-        mkdir -p /var/lib/selenite-podman-executor/stacks
-        chown _selenite-podman-executor:_selenite-podman-executor /var/lib/selenite-podman-executor
-        chown _selenite-podman-executor:_selenite-workloads /var/lib/selenite-podman-executor/stacks
-        chmod 2770 /var/lib/selenite-podman-executor/stacks
+        systemd-sysusers /usr/lib/sysusers.d/selenite.conf
 
   - name: Enable rootless podman for _selenite-podman-executor
     type: shell

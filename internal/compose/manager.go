@@ -15,7 +15,7 @@ var BaseStackDir = "/var/lib/selenite-podman-executor"
 
 const (
 	StacksSubdir = "stacks"
-	ExecutorBin  = "/usr/libexec/selenite-podman-executor"
+	ExecutorBin  = "/usr/libexec/selenite-controller/podman-compose-helper"
 )
 
 type Manager struct {

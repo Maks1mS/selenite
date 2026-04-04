@@ -8,31 +8,31 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build \
+RUN CGO_ENABLED=1 GOOS=linux go build \
     -ldflags="-s -w" \
     -trimpath \
     -o /selenite-controller \
     ./cmd/selenite-controller
 
-RUN CGO_ENABLED=0 GOOS=linux go build \
+RUN CGO_ENABLED=1 GOOS=linux go build \
     -ldflags="-s -w" \
     -trimpath \
-    -o /selenite-podman-executor \
-    ./cmd/selenite-podman-executor
+    -o /podman-compose-helper \
+    ./cmd/podman-compose-helper
 
-RUN CGO_ENABLED=0 GOOS=linux go build \
+RUN CGO_ENABLED=1 GOOS=linux go build \
     -ldflags="-s -w" \
     -trimpath \
     -o /selenite-machine-executor \
     ./cmd/selenite-machine-executor
 
-RUN CGO_ENABLED=0 GOOS=linux go build \
+RUN CGO_ENABLED=1 GOOS=linux go build \
     -ldflags="-s -w" \
     -trimpath \
     -o /sysctl-helper \
     ./cmd/sysctl-helper
 
-FROM altlinux.space/alt-atomic/core-minimal/nightly:20260403@sha256:f96126a30f64a6c16313a2d9e6ca7c779ebdc5625be30929eff9ebaeed564f11
+FROM altlinux.space/alt-atomic/core-minimal/nightly:20260404@sha256:4c8b867033c14303aac5af9e914f7f9118304a5759949c4c882c8e7a0b787c5f
 
 ARG DEV
 ENV DEV=$DEV
@@ -47,9 +47,9 @@ RUN --mount=type=bind,source=./distro/image.yml,target=/etc/apm/image.yml \
 
 COPY --from=selenite-controller /selenite-controller /usr/bin/selenite-controller
 
-COPY --from=selenite-controller /selenite-podman-executor /usr/libexec/selenite-podman-executor
-RUN chown root:_selenite-controller /usr/libexec/selenite-podman-executor && \
-    chmod 4750 /usr/libexec/selenite-podman-executor
+COPY --from=selenite-controller /podman-compose-helper /usr/libexec/selenite-controller/podman-compose-helper
+RUN chown root:_selenite-controller /usr/libexec/selenite-controller/podman-compose-helper && \
+    chmod 4750 /usr/libexec/selenite-controller/podman-compose-helper
 
     COPY --from=selenite-controller /selenite-machine-executor /usr/libexec/selenite-machine-executor
 RUN chown root:_selenite-controller /usr/libexec/selenite-machine-executor && \
