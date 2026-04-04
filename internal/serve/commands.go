@@ -41,9 +41,9 @@ OPTIONS:{{range .VisibleFlags}}
 {{- end}}
 `
 
-func appCmd(sess ssh.Session) *cli.Command {
+func AppCmd(sess ssh.Session) *cli.Command {
 	root := &cli.Command{
-		Name:                          "-",
+		Name:                          "Selenite",
 		UsageText:                     "ssh <server> [command [options]]",
 		Usage:                         "Immutable server OS for managing podman compose stacks",
 		CustomRootCommandHelpTemplate: helpTemplate,
@@ -85,15 +85,16 @@ func (p ptyWriter) Write(b []byte) (int, error) {
 }
 
 func prepareCmdForWish(cmd *cli.Command, sess ssh.Session) {
-	cli.HelpFlag = nil
-
-	cmd.Reader = sess
-	var w io.Writer = sess.Stderr()
-	if _, _, active := sess.Pty(); active {
-		w = ptyWriter{w}
+	if sess != nil {
+		cmd.Reader = sess
+		var w io.Writer = sess.Stderr()
+		if _, _, active := sess.Pty(); active {
+			w = ptyWriter{w}
+		}
+		cmd.Writer = w
+		cmd.ErrWriter = w
 	}
-	cmd.Writer = w
-	cmd.ErrWriter = w
+	cli.HelpFlag = nil
 	cmd.CommandNotFound = func(ctx context.Context, c *cli.Command, s string) {
 		_, _ = fmt.Fprintf(c.ErrWriter, "command not found: %s\n", s)
 	}

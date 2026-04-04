@@ -42,7 +42,7 @@ func Serve(ctx context.Context, options ServeOptions) error {
 				return func(sess ssh.Session) {
 					ctx, cancel := context.WithCancel(sess.Context())
 
-					app := appCmd(sess)
+					app := AppCmd(sess)
 					if err := app.Run(ctx, append([]string{""}, sess.Command()...)); err != nil {
 						_, _ = fmt.Fprintf(app.ErrWriter, "Error: %s\n", err)
 						cancel()
