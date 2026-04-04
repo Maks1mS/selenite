@@ -48,11 +48,12 @@ func appCmd(sess ssh.Session) *cli.Command {
 		Usage:                         "Immutable server OS for managing podman compose stacks",
 		CustomRootCommandHelpTemplate: helpTemplate,
 		Commands: []*cli.Command{
-			shellCommand(sess),
 			stackCommand(sess),
+			secretCommand(),
 			provisionCommand(sess),
 			accessCommand(),
 			machineCommands(),
+			shellCommand(sess),
 			versionCommand(),
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {

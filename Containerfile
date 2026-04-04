@@ -23,6 +23,12 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
 RUN CGO_ENABLED=1 GOOS=linux go build \
     -ldflags="-s -w" \
     -trimpath \
+    -o /podman-secret-helper \
+    ./cmd/podman-secret-helper
+
+RUN CGO_ENABLED=1 GOOS=linux go build \
+    -ldflags="-s -w" \
+    -trimpath \
     -o /selenite-machine-executor \
     ./cmd/selenite-machine-executor
 
@@ -51,7 +57,11 @@ COPY --from=selenite-controller /podman-compose-helper /usr/libexec/selenite-con
 RUN chown root:_selenite-controller /usr/libexec/selenite-controller/podman-compose-helper && \
     chmod 4750 /usr/libexec/selenite-controller/podman-compose-helper
 
-    COPY --from=selenite-controller /selenite-machine-executor /usr/libexec/selenite-machine-executor
+COPY --from=selenite-controller /podman-secret-helper /usr/libexec/selenite-controller/podman-secret-helper
+RUN chown root:_selenite-controller /usr/libexec/selenite-controller/podman-secret-helper && \
+    chmod 4750 /usr/libexec/selenite-controller/podman-secret-helper
+
+COPY --from=selenite-controller /selenite-machine-executor /usr/libexec/selenite-machine-executor
 RUN chown root:_selenite-controller /usr/libexec/selenite-machine-executor && \
     chmod 4750 /usr/libexec/selenite-machine-executor
 

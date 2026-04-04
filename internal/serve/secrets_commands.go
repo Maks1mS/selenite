@@ -1,0 +1,64 @@
+package serve
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/urfave/cli/v3"
+
+	"altlinux.space/alt-atomic-lab/selenite/internal/secrets"
+)
+
+var errSecretNameRequired = fmt.Errorf("secret name required")
+
+func secretCommand() *cli.Command {
+	cmd := &cli.Command{
+		Name:  "secret",
+		Usage: "Manage podman secrets",
+		Commands: []*cli.Command{
+			secretCreateCommand(),
+			secretListCommand(),
+			secretRemoveCommand(),
+		},
+	}
+	return cmd
+}
+
+func secretCreateCommand() *cli.Command {
+	cmd := &cli.Command{
+		Name:  "create",
+		Usage: "Create secret",
+		Action: func(ctx context.Context, c *cli.Command) error {
+			if c.NArg() == 0 {
+				return errSecretNameRequired
+			}
+			return secrets.New().Create(ctx, c.Args().First(), c.Reader, c.Writer)
+		},
+	}
+	return cmd
+}
+
+func secretRemoveCommand() *cli.Command {
+	return &cli.Command{
+		Name:    "remove",
+		Usage:   "Remove secret",
+		Aliases: []string{"rm"},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			if c.NArg() == 0 {
+				return errSecretNameRequired
+			}
+			return secrets.New().Rm(ctx, c.Args().First(), c.Writer)
+		},
+	}
+}
+
+func secretListCommand() *cli.Command {
+	return &cli.Command{
+		Name:    "list",
+		Usage:   "List secrets",
+		Aliases: []string{"ls"},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return secrets.New().List(ctx, c.Writer)
+		},
+	}
+}
