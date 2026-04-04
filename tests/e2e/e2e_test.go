@@ -24,7 +24,7 @@ func getFreePort() (string, error) {
 func startQEMU(diskImage, sshPort string) (*exec.Cmd, error) {
 	cmd := exec.Command("qemu-system-x86_64",
 		"-enable-kvm",
-		"-m", "2048M",
+		"-m", "256M",
 		"-nographic",
 		"-display", "none",
 		"-serial", "none",

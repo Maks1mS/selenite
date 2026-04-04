@@ -39,7 +39,7 @@ tasks:
         rm -f "{{.KNOWN_HOSTS}}"
         qemu-system-x86_64 \
           -enable-kvm \
-          -m 2048M \
+          -m 256M \
           -drive file={{.VM_DISK}},format=raw,if=virtio,snapshot=on \
           -netdev user,id=net0,hostfwd=tcp::{{.VM_SSH_PORT}}-:{{.VM_SSH_PORT}} \
           -device virtio-net-pci,netdev=net0 \
