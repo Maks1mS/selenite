@@ -13,7 +13,7 @@ import (
 	"github.com/charmbracelet/ssh"
 	gossh "golang.org/x/crypto/ssh"
 
-	access "altlinux.space/alt-atomic-lab/selenite/internal/access2"
+	"altlinux.space/alt-atomic-lab/selenite/internal/access"
 	v1 "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
 )
 
