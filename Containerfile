@@ -1,6 +1,6 @@
 # FROM registry.altlinux.org/sisyphus/golang:1.25.6@sha256:6e7d2dca3fa4dcd06f8896af7a081c8608b38d82cf4115d9852f14e137a78989 as selenite-controller
 # RUN apt-get update && apt-get -y install ca-certificates
-FROM golang:1.26.1@sha256:e2ddb153f786ee6210bf8c40f7f35490b3ff7d38be70d1a0d358ba64225f6428 as selenite-controller
+FROM golang:1.26.2@sha256:b53c282df83967299380adbd6a2dc67e750a58217f39285d6240f6f80b19eaad as selenite-controller
 
 WORKDIR /app
 
@@ -38,7 +38,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
     -o /sysctl-helper \
     ./cmd/sysctl-helper
 
-FROM altlinux.space/alt-atomic/core-minimal/nightly:20260404@sha256:4c8b867033c14303aac5af9e914f7f9118304a5759949c4c882c8e7a0b787c5f
+FROM altlinux.space/alt-atomic/core-minimal/nightly:20260409@sha256:d26f1069ce8c722571bc345fd38a3b5490946a5056619fe23cf30eec8be6a0af
 
 ARG DEV
 ENV DEV=$DEV
