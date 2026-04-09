@@ -3,7 +3,6 @@
 package e2e
 
 import (
-	"bytes"
 	"crypto/ed25519"
 	"errors"
 	"fmt"
@@ -105,16 +104,6 @@ func (c *testClient) reconnect(t *testing.T, timeout time.Duration) {
 	}
 	c.ssh = ssh
 	t.Cleanup(func() { ssh.Close() })
-}
-
-func (c *testClient) FormatKey() string {
-	return fmt.Sprintf("%s %s;%s",
-		bytes.TrimRight(
-			gossh.MarshalAuthorizedKey(c.publicKey), "\n",
-		),
-		"provisioner",
-		"Provision key",
-	)
 }
 
 // run runs a named sub-step; if it fails, the parent test is aborted.

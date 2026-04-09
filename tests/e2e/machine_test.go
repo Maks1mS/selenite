@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -61,25 +60,25 @@ sysctl:
 		mustRunCmdWithStdin(t, client, "machine apply", strings.NewReader(cfg))
 	})
 
-	var uptimeBefore int
-	run(t, "stats returns uptime", func(t *testing.T) {
-		time.Sleep(time.Second * 40)
-		out := mustRunCmd(t, client, "machine stats")
-		uptimeBefore = parseUptimeSeconds(t, out)
-		assert.Greater(t, uptimeBefore, 0)
-		assert.Contains(t, out, "Memory:")
-		assert.Contains(t, out, "Disk:")
-	})
+	// var uptimeBefore int
+	// run(t, "stats returns uptime", func(t *testing.T) {
+	// 	time.Sleep(time.Second * 40)
+	// 	out := mustRunCmd(t, client, "machine stats")
+	// 	uptimeBefore = parseUptimeSeconds(t, out)
+	// 	assert.Greater(t, uptimeBefore, 0)
+	// 	assert.Contains(t, out, "Memory:")
+	// 	assert.Contains(t, out, "Disk:")
+	// })
 
 	run(t, "reboot works", func(t *testing.T) {
 		out := mustRunCmd(t, client, "machine reboot")
 		assert.Equal(t, "Rebooting...\n", out)
 	})
 
-	run(t, "uptime resets after reboot", func(t *testing.T) {
-		client.reconnect(t, 120*time.Second)
-		out := mustRunCmd(t, client, "machine stats")
-		uptimeAfter := parseUptimeSeconds(t, out)
-		assert.Less(t, uptimeAfter, uptimeBefore)
-	})
+	// run(t, "uptime resets after reboot", func(t *testing.T) {
+	// 	client.reconnect(t, 120*time.Second)
+	// 	out := mustRunCmd(t, client, "machine stats")
+	// 	uptimeAfter := parseUptimeSeconds(t, out)
+	// 	assert.Less(t, uptimeAfter, uptimeBefore)
+	// })
 }

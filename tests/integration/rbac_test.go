@@ -1,0 +1,135 @@
+package integration
+
+import (
+	"context"
+	"io"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v3"
+
+	access "altlinux.space/alt-atomic-lab/selenite/internal/access2"
+	v1 "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
+	"altlinux.space/alt-atomic-lab/selenite/internal/serve"
+)
+
+// commandRBACCase describes an RBAC-protected CLI command and the permission it requires.
+type commandRBACCase struct {
+	cliArgs  []string
+	resource string
+	verb     string
+}
+
+// protectedCommands lists every RBAC-protected CLI command.
+var protectedCommands = []commandRBACCase{
+	// machine
+	{[]string{"", "machine", "info"}, "machine/info", "get"},
+	{[]string{"", "machine", "reboot"}, "machine/reboot", "invoke"},
+	{[]string{"", "machine", "upgrade"}, "machine/upgrade", "invoke"},
+	{[]string{"", "machine", "rollback"}, "machine/rollback", "invoke"},
+	{[]string{"", "machine", "switch", "myimage"}, "machine/switch", "invoke"},
+	{[]string{"", "machine", "config", "apply"}, "machine/config", "update"},
+	// stack
+	{[]string{"", "stack", "deploy", "myapp"}, "stack/myapp", "create"},
+	{[]string{"", "stack", "list"}, "stack", "list"},
+	{[]string{"", "stack", "up", "myapp"}, "stack/myapp", "update"},
+	{[]string{"", "stack", "down", "myapp"}, "stack/myapp", "update"},
+	{[]string{"", "stack", "remove", "myapp"}, "stack/myapp", "delete"},
+	{[]string{"", "stack", "ps", "myapp"}, "stack/myapp", "get"},
+	{[]string{"", "stack", "logs", "myapp"}, "stack/myapp", "get"},
+	// secret
+	{[]string{"", "secret", "create", "mysecret"}, "secret/mysecret", "create"},
+	{[]string{"", "secret", "remove", "mysecret"}, "secret/mysecret", "delete"},
+	{[]string{"", "secret", "list"}, "secret", "list"},
+}
+
+// rbacCtx builds a context that mimics what the SSH session middleware injects.
+func rbacCtx(t *testing.T, cfg v1.AccessConfig, username string) context.Context {
+	t.Helper()
+	e, err := access.NewEnforcer(cfg)
+	require.NoError(t, err)
+	return serve.WithRBACSession(context.Background(), e, username)
+}
+
+// noAccessCfg returns an AccessConfig where the user exists but has no roles.
+func noAccessCfg(user string) v1.AccessConfig {
+	return v1.AccessConfig{
+		Users: []v1.User{{Name: user, Roles: []string{}}},
+	}
+}
+
+// exactPermCfg returns an AccessConfig granting user exactly one resource+verb.
+func exactPermCfg(user, resource, verb string) v1.AccessConfig {
+	return v1.AccessConfig{
+		Roles: []v1.Role{{
+			Name:  "test-role",
+			Rules: []v1.Rules{{Resources: []string{resource}, Verbs: []string{verb}}},
+		}},
+		Users: []v1.User{{Name: user, Roles: []string{"test-role"}}},
+	}
+}
+
+// newTestApp returns AppCmd(nil) with writers set to io.Discard.
+func newTestApp() *cli.Command {
+	app := serve.AppCmd(nil)
+	app.Writer = io.Discard
+	app.ErrWriter = io.Discard
+	app.Reader = strings.NewReader("")
+	return app
+}
+
+// isRBACDenial reports whether err is an RBAC permission denial from checkPermission.
+// The format is "permission denied: <verb> <resource>"
+func isRBACDenial(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "permission denied:")
+}
+
+// TestRBACCommandDeniedWithoutPermission verifies that every RBAC-protected command
+// rejects a user who has no permissions at all.
+func TestRBACCommandDeniedWithoutPermission(t *testing.T) {
+	for _, tc := range protectedCommands {
+		name := strings.Join(tc.cliArgs[1:], " ")
+		t.Run(name, func(t *testing.T) {
+			ctx := rbacCtx(t, noAccessCfg("alice"), "alice")
+			err := newTestApp().Run(ctx, tc.cliArgs)
+			require.True(t, isRBACDenial(err),
+				"expected RBAC denial, got: %v", err)
+		})
+	}
+}
+
+// TestRBACCommandAllowedWithExactPermission verifies that each command checks the
+// correct resource and verb. A user granted only {tc.resource, tc.verb} should pass
+// the Before hook for that specific command.
+func TestRBACCommandAllowedWithExactPermission(t *testing.T) {
+	for _, tc := range protectedCommands {
+		name := strings.Join(tc.cliArgs[1:], " ")
+		t.Run(name, func(t *testing.T) {
+			ctx := rbacCtx(t, exactPermCfg("alice", tc.resource, tc.verb), "alice")
+			err := newTestApp().Run(ctx, tc.cliArgs)
+			// The Action may fail for unrelated reasons.
+			// The only unacceptable outcome is an RBAC denial.
+			require.False(t, isRBACDenial(err),
+				"unexpected RBAC denial with exact permission: %v", err)
+		})
+	}
+}
+
+// TestRBACRootBypassesAllChecks verifies that a user with the root role is never
+// blocked by RBAC for any of the protected commands.
+func TestRBACRootBypassesAllChecks(t *testing.T) {
+	cfg := v1.AccessConfig{
+		Users: []v1.User{{Name: "admin", Roles: []string{"root"}}},
+	}
+	ctx := rbacCtx(t, cfg, "admin")
+
+	for _, tc := range protectedCommands {
+		name := strings.Join(tc.cliArgs[1:], " ")
+		t.Run(name, func(t *testing.T) {
+			err := newTestApp().Run(ctx, tc.cliArgs)
+			require.False(t, isRBACDenial(err),
+				"root should not be denied: %v", err)
+		})
+	}
+}

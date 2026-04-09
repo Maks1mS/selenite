@@ -7,15 +7,31 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/casbin/casbin/v2"
 	"github.com/charmbracelet/ssh"
 	"github.com/urfave/cli/v3"
-
 	gossh "golang.org/x/crypto/ssh"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/access/keys"
+	v1 "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
 	"altlinux.space/alt-atomic-lab/selenite/internal/shell"
-	"altlinux.space/alt-atomic-lab/selenite/internal/version"
 )
+
+type ctxKey string
+
+const (
+	ctxIsProvisionMode ctxKey = "is-provision-mode"
+	ctxRBACEnforcer    ctxKey = "rbac-enforcer"
+	ctxRBACUsername    ctxKey = "rbac-username"
+)
+
+// WithRBACSession returns ctx with RBAC session values set.
+// Used by the SSH middleware and test helpers.
+func WithRBACSession(ctx context.Context, enforcer *casbin.Enforcer, username string) context.Context {
+	ctx = context.WithValue(ctx, ctxIsProvisionMode, false)
+	ctx = context.WithValue(ctx, ctxRBACEnforcer, enforcer)
+	ctx = context.WithValue(ctx, ctxRBACUsername, username)
+	return ctx
+}
 
 const helpTemplate = `Selenite is an immutable server OS built around podman compose stacks.
 
@@ -51,13 +67,12 @@ func AppCmd(sess ssh.Session) *cli.Command {
 			stackCommand(sess),
 			secretCommand(),
 			provisionCommand(sess),
-			accessCommand(),
 			machineCommands(),
 			shellCommand(sess),
-			versionCommand(),
+			// versionCommand(),
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
-			isProvision, _ := ctx.Value("is-provision-mode").(bool)
+			isProvision, _ := ctx.Value(ctxIsProvisionMode).(bool)
 			if !isProvision {
 				return ctx, nil
 			}
@@ -126,31 +141,59 @@ func provisionCommand(sess ssh.Session) *cli.Command {
 		Name:  "provision",
 		Usage: "Provision",
 		Action: func(ctx context.Context, c *cli.Command) error {
-			err := keys.NewKeysManager().Add(
-				fmt.Sprintf("%s %s;%s",
-					bytes.TrimRight(
-						gossh.MarshalAuthorizedKey(sess.PublicKey()), "\n",
-					),
-					"provisioner",
-					"Provision key",
-				),
-			)
-			if err != nil {
-				return fmt.Errorf("add: %w", err)
+			isProvision, _ := ctx.Value(ctxIsProvisionMode).(bool)
+			if !isProvision {
+				return fmt.Errorf("provision: machine is already provisioned")
 			}
 
-			return nil
+			store := v1.ConfigStore{}
+			cfg, err := store.Load()
+			if err != nil {
+				return fmt.Errorf("provision: load config: %w", err)
+			}
+
+			keyStr := string(bytes.TrimRight(
+				gossh.MarshalAuthorizedKey(sess.PublicKey()), "\n",
+			))
+			cfg.Access.Users = append(cfg.Access.Users, v1.User{
+				Name:  "provisioner",
+				Roles: []string{"root"},
+				Keys:  []string{keyStr},
+			})
+			return store.Save(cfg)
 		},
 	}
 }
 
-func versionCommand() *cli.Command {
-	return &cli.Command{
-		Name:  "version",
-		Usage: "Print the version",
-		Action: func(ctx context.Context, c *cli.Command) error {
-			_, _ = fmt.Fprintln(c.Writer, version.FormatVersion())
-			return nil
-		},
+// checkPermission checks whether the current user has permission for the given resource and verb.
+// If no enforcer is set in context (provision mode), access is always granted.
+func checkPermission(ctx context.Context, resource, verb string) error {
+	enforcer, _ := ctx.Value(ctxRBACEnforcer).(*casbin.Enforcer)
+	if enforcer == nil {
+		return nil
+	}
+	username, _ := ctx.Value(ctxRBACUsername).(string)
+	ok, err := enforcer.Enforce(username, resource, verb)
+	if err != nil {
+		return fmt.Errorf("rbac error: %w", err)
+	}
+	if !ok {
+		return fmt.Errorf("permission denied: %s %s", verb, resource)
+	}
+	return nil
+}
+
+// requirePermission returns a cli.BeforeFunc that enforces a static resource/verb pair.
+func requirePermission(resource, verb string) cli.BeforeFunc {
+	return func(ctx context.Context, c *cli.Command) (context.Context, error) {
+		return ctx, checkPermission(ctx, resource, verb)
+	}
+}
+
+// requirePermissionForArg returns a cli.BeforeFunc that builds the resource from a
+// prefix and the first positional argument.
+func requirePermissionForArg(prefix, verb string) cli.BeforeFunc {
+	return func(ctx context.Context, c *cli.Command) (context.Context, error) {
+		return ctx, checkPermission(ctx, prefix+"/"+c.Args().First(), verb)
 	}
 }

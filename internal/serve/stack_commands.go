@@ -36,6 +36,7 @@ func stackDeployCommand(sess ssh.Session) *cli.Command {
 		Name:      "deploy",
 		Usage:     "Deploy a stack from stdin (compose.yml)",
 		ArgsUsage: stackNamePlaceholder,
+		Before:    requirePermissionForArg("stack", "create"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errStackNameRequired
@@ -47,8 +48,9 @@ func stackDeployCommand(sess ssh.Session) *cli.Command {
 
 func stackListCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "list",
-		Usage: "List all stacks",
+		Name:   "list",
+		Usage:  "List all stacks",
+		Before: requirePermission("stack", "list"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			names, err := compose.NewManager().List()
 			if err != nil {
@@ -71,6 +73,7 @@ func stackUpCommand() *cli.Command {
 		Name:      "up",
 		Usage:     "Start a stack",
 		ArgsUsage: stackNamePlaceholder,
+		Before:    requirePermissionForArg("stack", "update"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errStackNameRequired
@@ -85,6 +88,7 @@ func stackDownCommand() *cli.Command {
 		Name:      "down",
 		Usage:     "Stop a stack",
 		ArgsUsage: stackNamePlaceholder,
+		Before:    requirePermissionForArg("stack", "update"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errStackNameRequired
@@ -99,6 +103,7 @@ func stackRemoveCommand() *cli.Command {
 		Name:      "remove",
 		Usage:     "Remove a stack",
 		ArgsUsage: stackNamePlaceholder,
+		Before:    requirePermissionForArg("stack", "delete"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errStackNameRequired
@@ -113,6 +118,7 @@ func stackPsCommand() *cli.Command {
 		Name:      "ps",
 		Usage:     "Show stack container status",
 		ArgsUsage: stackNamePlaceholder,
+		Before:    requirePermissionForArg("stack", "get"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errStackNameRequired
@@ -127,6 +133,7 @@ func stackLogsCommand() *cli.Command {
 		Name:      "logs",
 		Usage:     "View stack logs",
 		ArgsUsage: fmt.Sprintf("%s [service]", stackNamePlaceholder),
+		Before:    requirePermissionForArg("stack", "get"),
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "follow",

@@ -12,12 +12,12 @@ func TestMiscCommandsWorks(t *testing.T) {
 	t.Parallel()
 	client := bootVMWithProvison(t)
 
-	run(t, "version works", func(t *testing.T) {
-		out := mustRunCmd(t, client, "version")
-		assert.Contains(t, out, "Version:")
-		assert.Contains(t, out, "GitCommit:")
-		assert.Contains(t, out, "Go:")
-	})
+	// run(t, "version works", func(t *testing.T) {
+	// 	out := mustRunCmd(t, client, "version")
+	// 	assert.Contains(t, out, "Version:")
+	// 	assert.Contains(t, out, "GitCommit:")
+	// 	assert.Contains(t, out, "Go:")
+	// })
 
 	run(t, "help works", func(t *testing.T) {
 		out := mustRunCmd(t, client, "help")

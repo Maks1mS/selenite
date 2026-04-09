@@ -20,7 +20,6 @@ func machineCommands() *cli.Command {
 		Usage: "Manage machine",
 		Commands: []*cli.Command{
 			infoCommand(),
-			statsCommand(),
 			rebootCommand(),
 			upgradeCommand(),
 			rollbackCommand(),
@@ -32,28 +31,20 @@ func machineCommands() *cli.Command {
 
 func infoCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "info",
-		Usage: "Show machine info",
+		Name:   "info",
+		Usage:  "Show machine info",
+		Before: requirePermission("machine/info", "get"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return machine.New().Info(ctx, c.Writer)
 		},
 	}
 }
 
-func statsCommand() *cli.Command {
-	return &cli.Command{
-		Name:  "stats",
-		Usage: "Show machine stats",
-		Action: func(ctx context.Context, c *cli.Command) error {
-			return machine.New().Stats(ctx, c.Writer)
-		},
-	}
-}
-
 func rebootCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "reboot",
-		Usage: "Reboot",
+		Name:   "reboot",
+		Usage:  "Reboot",
+		Before: requirePermission("machine/reboot", "invoke"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return machine.New().Reboot(ctx, c.Writer)
 		},
@@ -62,8 +53,9 @@ func rebootCommand() *cli.Command {
 
 func upgradeCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "upgrade",
-		Usage: "Upgrade",
+		Name:   "upgrade",
+		Usage:  "Upgrade",
+		Before: requirePermission("machine/upgrade", "invoke"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return machine.New().Upgrade(ctx, c.Writer)
 		},
@@ -72,8 +64,9 @@ func upgradeCommand() *cli.Command {
 
 func rollbackCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "rollback",
-		Usage: "Rollback",
+		Name:   "rollback",
+		Usage:  "Rollback",
+		Before: requirePermission("machine/rollback", "invoke"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return machine.New().Rollback(ctx, c.Writer)
 		},
@@ -85,6 +78,7 @@ func switchCommand() *cli.Command {
 		Name:      "switch",
 		Usage:     "Switch to a different image",
 		ArgsUsage: imagePlaceholder,
+		Before:    requirePermission("machine/switch", "invoke"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errImageRequired
@@ -106,8 +100,9 @@ func configCommand() *cli.Command {
 
 func applyConfigCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "apply",
-		Usage: "Apply machine config",
+		Name:   "apply",
+		Usage:  "Apply machine config",
+		Before: requirePermission("machine/config", "update"),
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name: "reboot",
