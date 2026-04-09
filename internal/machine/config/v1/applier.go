@@ -3,8 +3,12 @@ package v1
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 	"strings"
+
+	gossh "golang.org/x/crypto/ssh"
 
 	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
 )
@@ -21,17 +25,24 @@ type ModuleApplier interface {
 // Applier orchestrates atomic apply across all modules.
 type Applier struct {
 	modules []ModuleApplier
+	prev    *MachineConfig
+	cfg     *MachineConfig
+	store   Store
 }
 
-func NewApplier(cfg, prev *MachineConfig, r executil.Runner) *Applier {
+func NewApplier(cfg, prev *MachineConfig, r executil.Runner, s Store) *Applier {
 	var prevSysctl map[string]string
 	if prev != nil {
 		prevSysctl = prev.Sysctl.Params
 	}
 	return &Applier{
 		modules: []ModuleApplier{
+			NewAccessApplier(cfg.Access),
 			NewSysctlApplier(cfg.Sysctl.Params, prevSysctl, r),
 		},
+		prev:  prev,
+		cfg:   cfg,
+		store: s,
 	}
 }
 
@@ -52,6 +63,68 @@ func (a *Applier) Apply(ctx context.Context) error {
 		}
 		applied = append(applied, m)
 	}
+
+	if err := a.store.Save(a.cfg); err != nil {
+		// does it look like we should do a rollback?
+		return fmt.Errorf("persist config: %w", err)
+	}
+
+	return nil
+}
+
+type AccessApplier struct {
+	newParams AccessConfig
+}
+
+func NewAccessApplier(newParams AccessConfig) *AccessApplier {
+	return &AccessApplier{newParams}
+}
+
+func (a *AccessApplier) Name() string {
+	return "access"
+}
+
+func (a *AccessApplier) Validate(_ context.Context) error {
+	if len(a.newParams.Users) == 0 {
+		return errors.New("users can't be empty")
+	}
+	return a.validateRoot()
+}
+
+func (a *AccessApplier) validateRoot() error {
+	hasRoot := false
+	hasRootWithKeys := false
+
+	for _, user := range a.newParams.Users {
+		if slices.Contains(user.Roles, "root") {
+			hasRoot = true
+			if len(user.Keys) > 0 {
+				hasRootWithKeys = true
+			}
+		}
+		for _, keyStr := range user.Keys {
+			_, _, _, _, err := gossh.ParseAuthorizedKey([]byte(keyStr))
+			if err != nil {
+				return fmt.Errorf("incorrect key: %w", err)
+			}
+		}
+	}
+
+	if !hasRoot {
+		return errors.New("at least one user must have the root role")
+	}
+	if !hasRootWithKeys {
+		return errors.New("at least one root user must have keys")
+	}
+
+	return nil
+}
+
+func (a *AccessApplier) Apply(ctx context.Context) error {
+	return nil
+}
+
+func (a *AccessApplier) Rollback(ctx context.Context) error {
 	return nil
 }
 

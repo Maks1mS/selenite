@@ -229,13 +229,9 @@ func (m *machineManager) ApplyConfig(ctx context.Context, r io.Reader, w io.Writ
 		return fmt.Errorf("load previous config: %w", err)
 	}
 
-	applier := config.NewApplier(cfg, prev, m.runner)
+	applier := config.NewApplier(cfg, prev, m.runner, m.store)
 	if err := applier.Apply(ctx); err != nil {
 		return fmt.Errorf("apply: %w", err)
-	}
-
-	if err := m.store.Save(cfg); err != nil {
-		return fmt.Errorf("persist config: %w", err)
 	}
 
 	return nil

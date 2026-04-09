@@ -43,6 +43,13 @@ func TestApplyConfig(t *testing.T) {
 		m := newTestMachine(t, r)
 
 		cfg := `
+access:
+  users:
+    - name: root
+      roles:
+        - root
+      keys:
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJOlcwmfZCWi/5k6bZu7GZ8LOfxwaSjf3/PkBan+UPwJ"
 sysctl:
   params:
     net.ipv4.ip_unprivileged_port_start: 1024
