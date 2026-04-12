@@ -28,7 +28,7 @@ func secretCreateCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "create",
 		Usage:  "Create secret",
-		Before: requirePermissionForArg("secret", "create"),
+		Before: requirePermissionForArg("infra/secret", "create"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errSecretNameRequired
@@ -43,7 +43,7 @@ func secretRemoveCommand() *cli.Command {
 		Name:    "remove",
 		Usage:   "Remove secret",
 		Aliases: []string{"rm"},
-		Before:  requirePermissionForArg("secret", "delete"),
+		Before:  requirePermissionForArg("infra/secret", "delete"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errSecretNameRequired
@@ -58,7 +58,7 @@ func secretListCommand() *cli.Command {
 		Name:    "list",
 		Usage:   "List secrets",
 		Aliases: []string{"ls"},
-		Before:  requirePermission("secret", "list"),
+		Before:  requirePermission("infra/secret", "list"),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return secrets.New().List(ctx, c.Writer)
 		},

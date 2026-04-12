@@ -65,10 +65,10 @@ func AppCmd(sess ssh.Session) *cli.Command {
 		CustomRootCommandHelpTemplate: helpTemplate,
 		Commands: []*cli.Command{
 			stackCommand(sess),
-			secretCommand(),
-			provisionCommand(sess),
+			infraCommand(),
 			machineCommands(),
 			shellCommand(sess),
+			provisionCommand(sess),
 			// versionCommand(),
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {

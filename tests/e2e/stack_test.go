@@ -34,16 +34,16 @@ func TestStack(t *testing.T) {
 	})
 
 	run(t, "initial secret list is empty", func(t *testing.T) {
-		out := mustRunCmd(t, client, "secret list")
+		out := mustRunCmd(t, client, "infra secret list")
 		assert.Equal(t, "ID          NAME        DRIVER      CREATED     UPDATED\n", out)
 	})
 
 	run(t, "add secret", func(t *testing.T) {
-		mustRunCmdWithStdin(t, client, "secret create test_secret", strings.NewReader("Super secret string"))
+		mustRunCmdWithStdin(t, client, "infra secret create test_secret", strings.NewReader("Super secret string"))
 	})
 
 	run(t, "secret added", func(t *testing.T) {
-		out := mustRunCmd(t, client, "secret list")
+		out := mustRunCmd(t, client, "infra secret list")
 		assert.Contains(t, out, "test_secret")
 	})
 
