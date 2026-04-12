@@ -9,6 +9,39 @@ import (
 	v1 "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
 )
 
+type AccessVerb int
+
+const (
+	UnknownVerb AccessVerb = iota
+	GetVerb
+	CreateVerb
+	UpdateVerb
+	DeleteVerb
+	ListVerb
+	InvokeVerb
+)
+
+func (d AccessVerb) String() string {
+	switch d {
+	case GetVerb:
+		return "get"
+	case CreateVerb:
+		return "create"
+	case UpdateVerb:
+		return "update"
+	case DeleteVerb:
+		return "delete"
+	case ListVerb:
+		return "list"
+	case InvokeVerb:
+		return "invoke"
+	case UnknownVerb:
+		fallthrough
+	default:
+		return "unknown"
+	}
+}
+
 const modelText = `
 [request_definition]
 r = sub, obj, act

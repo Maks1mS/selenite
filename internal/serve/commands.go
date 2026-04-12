@@ -12,6 +12,7 @@ import (
 	"github.com/urfave/cli/v3"
 	gossh "golang.org/x/crypto/ssh"
 
+	"altlinux.space/alt-atomic-lab/selenite/internal/access"
 	v1 "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
 	"altlinux.space/alt-atomic-lab/selenite/internal/shell"
 )
@@ -167,24 +168,24 @@ func provisionCommand(sess ssh.Session) *cli.Command {
 
 // checkPermission checks whether the current user has permission for the given resource and verb.
 // If no enforcer is set in context (provision mode), access is always granted.
-func checkPermission(ctx context.Context, resource, verb string) error {
+func checkPermission(ctx context.Context, resource string, verb access.AccessVerb) error {
 	enforcer, _ := ctx.Value(ctxRBACEnforcer).(*casbin.Enforcer)
 	if enforcer == nil {
 		return nil
 	}
 	username, _ := ctx.Value(ctxRBACUsername).(string)
-	ok, err := enforcer.Enforce(username, resource, verb)
+	ok, err := enforcer.Enforce(username, resource, verb.String())
 	if err != nil {
 		return fmt.Errorf("rbac error: %w", err)
 	}
 	if !ok {
-		return fmt.Errorf("permission denied: %s %s", verb, resource)
+		return fmt.Errorf("permission denied: %s %s", verb.String(), resource)
 	}
 	return nil
 }
 
 // requirePermission returns a cli.BeforeFunc that enforces a static resource/verb pair.
-func requirePermission(resource, verb string) cli.BeforeFunc {
+func requirePermission(resource string, verb access.AccessVerb) cli.BeforeFunc {
 	return func(ctx context.Context, c *cli.Command) (context.Context, error) {
 		return ctx, checkPermission(ctx, resource, verb)
 	}
@@ -192,7 +193,7 @@ func requirePermission(resource, verb string) cli.BeforeFunc {
 
 // requirePermissionForArg returns a cli.BeforeFunc that builds the resource from a
 // prefix and the first positional argument.
-func requirePermissionForArg(prefix, verb string) cli.BeforeFunc {
+func requirePermissionForArg(prefix string, verb access.AccessVerb) cli.BeforeFunc {
 	return func(ctx context.Context, c *cli.Command) (context.Context, error) {
 		return ctx, checkPermission(ctx, prefix+"/"+c.Args().First(), verb)
 	}

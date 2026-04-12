@@ -7,6 +7,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"altlinux.space/alt-atomic-lab/selenite/internal/access"
 	"altlinux.space/alt-atomic-lab/selenite/internal/machine"
 )
 
@@ -33,7 +34,7 @@ func infoCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "info",
 		Usage:  "Show machine info",
-		Before: requirePermission("machine/info", "get"),
+		Before: requirePermission("machine/info", access.GetVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return machine.New().Info(ctx, c.Writer)
 		},
@@ -44,7 +45,7 @@ func rebootCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "reboot",
 		Usage:  "Reboot",
-		Before: requirePermission("machine/reboot", "invoke"),
+		Before: requirePermission("machine/reboot", access.InvokeVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return machine.New().Reboot(ctx, c.Writer)
 		},
@@ -55,7 +56,7 @@ func upgradeCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "upgrade",
 		Usage:  "Upgrade",
-		Before: requirePermission("machine/upgrade", "invoke"),
+		Before: requirePermission("machine/upgrade", access.InvokeVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return machine.New().Upgrade(ctx, c.Writer)
 		},
@@ -66,7 +67,7 @@ func rollbackCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "rollback",
 		Usage:  "Rollback",
-		Before: requirePermission("machine/rollback", "invoke"),
+		Before: requirePermission("machine/rollback", access.InvokeVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return machine.New().Rollback(ctx, c.Writer)
 		},
@@ -78,7 +79,7 @@ func switchCommand() *cli.Command {
 		Name:      "switch",
 		Usage:     "Switch to a different image",
 		ArgsUsage: imagePlaceholder,
-		Before:    requirePermission("machine/switch", "invoke"),
+		Before:    requirePermission("machine/switch", access.InvokeVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errImageRequired
@@ -102,7 +103,7 @@ func applyConfigCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "apply",
 		Usage:  "Apply machine config",
-		Before: requirePermission("machine/config", "update"),
+		Before: requirePermission("machine/config", access.UpdateVerb),
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name: "reboot",

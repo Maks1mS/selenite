@@ -6,6 +6,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"altlinux.space/alt-atomic-lab/selenite/internal/access"
 	"altlinux.space/alt-atomic-lab/selenite/internal/secrets"
 )
 
@@ -28,7 +29,7 @@ func secretCreateCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "create",
 		Usage:  "Create secret",
-		Before: requirePermissionForArg("infra/secret", "create"),
+		Before: requirePermissionForArg("infra/secret", access.CreateVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errSecretNameRequired
@@ -43,7 +44,7 @@ func secretRemoveCommand() *cli.Command {
 		Name:    "remove",
 		Usage:   "Remove secret",
 		Aliases: []string{"rm"},
-		Before:  requirePermissionForArg("infra/secret", "delete"),
+		Before:  requirePermissionForArg("infra/secret", access.DeleteVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errSecretNameRequired
@@ -58,7 +59,7 @@ func secretListCommand() *cli.Command {
 		Name:    "list",
 		Usage:   "List secrets",
 		Aliases: []string{"ls"},
-		Before:  requirePermission("infra/secret", "list"),
+		Before:  requirePermission("infra/secret", access.ListVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return secrets.New().List(ctx, c.Writer)
 		},

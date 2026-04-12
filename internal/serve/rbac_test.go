@@ -25,7 +25,7 @@ func makeRBACCtx(t *testing.T, cfg v1.AccessConfig) context.Context {
 }
 
 func TestCheckPermissionNilEnforcer(t *testing.T) {
-	err := checkPermission(context.Background(), "machine/reboot", "invoke")
+	err := checkPermission(context.Background(), "machine/reboot", access.InvokeVerb)
 	require.NoError(t, err)
 }
 
@@ -39,7 +39,7 @@ func TestCheckPermissionAllowed(t *testing.T) {
 	}
 	ctx := makeRBACCtx(t, cfg)
 
-	require.NoError(t, checkPermission(ctx, "machine/info", "get"))
+	require.NoError(t, checkPermission(ctx, "machine/info", access.GetVerb))
 }
 
 func TestCheckPermissionDenied(t *testing.T) {
@@ -48,7 +48,7 @@ func TestCheckPermissionDenied(t *testing.T) {
 	}
 	ctx := makeRBACCtx(t, cfg)
 
-	err := checkPermission(ctx, "machine/info", "get")
+	err := checkPermission(ctx, "machine/info", access.GetVerb)
 	require.ErrorContains(t, err, "permission denied:")
 }
 
@@ -62,14 +62,14 @@ func TestRequirePermission(t *testing.T) {
 			Users: []v1.User{{Name: testUser, Roles: []string{"viewer"}}},
 		}
 		ctx := makeRBACCtx(t, cfg)
-		before := requirePermission("machine/info", "get")
+		before := requirePermission("machine/info", access.GetVerb)
 		_, err := before(ctx, &cli.Command{})
 		require.NoError(t, err)
 	})
 
 	t.Run("denied", func(t *testing.T) {
 		ctx := makeRBACCtx(t, v1.AccessConfig{Users: []v1.User{{Name: testUser}}})
-		before := requirePermission("machine/info", "get")
+		before := requirePermission("machine/info", access.GetVerb)
 		_, err := before(ctx, &cli.Command{})
 		require.ErrorContains(t, err, "permission denied:")
 	})
@@ -83,7 +83,7 @@ func TestRequirePermissionForArg(t *testing.T) {
 			Commands: []*cli.Command{
 				{
 					Name:   "deploy",
-					Before: requirePermissionForArg("stack", "create"),
+					Before: requirePermissionForArg("stack", access.CreateVerb),
 					Action: func(_ context.Context, _ *cli.Command) error { return nil },
 				},
 			},
