@@ -3,6 +3,8 @@
 package e2e
 
 import (
+	"bytes"
+	"embed"
 	"strings"
 	"testing"
 
@@ -17,11 +19,20 @@ const testComposeYAML = `services:
     restart: unless-stopped
     secrets:
       - test_secret
+    volumes:
+      my_test_volume:/volume
+
+volumes:
+  my_test_volume:
+    name: "my_test_volume"
 
 secrets:
   test_secret:
     external: true
 `
+
+//go:embed testdata/*
+var testdataFS embed.FS
 
 func TestStack(t *testing.T) {
 	t.Parallel()
@@ -51,6 +62,33 @@ func TestStack(t *testing.T) {
 		mustDeployStack(t, client, stackName, testComposeYAML)
 		out := mustRunCmd(t, client, "stack list")
 		require.Contains(t, out, stackName)
+	})
+
+	run(t, "import volume", func(t *testing.T) {
+		volumeData, err := testdataFS.ReadFile("testdata/volume.tar.zst")
+		require.NoError(t, err)
+
+		err = sshRun(
+			client.ssh,
+			"infra volume import my_test_volume",
+			WithStdin(bytes.NewReader(volumeData)),
+		)
+		require.NoError(t, err)
+	})
+
+	run(t, "export volume", func(t *testing.T) {
+		volumeData, err := testdataFS.ReadFile("testdata/volume.tar.zst")
+		require.NoError(t, err)
+
+		var buf bytes.Buffer
+
+		err = sshRun(
+			client.ssh,
+			"infra volume export my_test_volume",
+			WithStdout(&buf),
+		)
+		require.NoError(t, err)
+		require.Equal(t, buf.Bytes(), volumeData)
 	})
 
 	run(t, "remove removes stack", func(t *testing.T) {

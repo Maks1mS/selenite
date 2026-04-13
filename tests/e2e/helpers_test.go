@@ -179,11 +179,39 @@ func runCmdWithStdin(t *testing.T, client *gossh.Client, cmd string, stdin io.Re
 	return buf.String(), nil
 }
 
+type Option func(*gossh.Session)
+
+func WithStdout(w io.Writer) Option { return func(c *gossh.Session) { c.Stdout = w } }
+func WithStderr(w io.Writer) Option { return func(c *gossh.Session) { c.Stderr = w } }
+func WithCombinedOutput(w io.Writer) Option {
+	return func(c *gossh.Session) { c.Stdout = w; c.Stderr = w }
+}
+func WithStdin(r io.Reader) Option { return func(c *gossh.Session) { c.Stdin = r } }
+
+func sshRun(client *gossh.Client, cmd string, opts ...Option) error {
+	sess, err := client.NewSession()
+	if err != nil {
+		return fmt.Errorf("new session: %w", err)
+	}
+	for _, o := range opts {
+		o(sess)
+	}
+	if err := sess.Run(cmd); err != nil {
+		var ee *gossh.ExitError
+		if errors.As(err, &ee) {
+			return ee
+		}
+		return err
+	}
+	return nil
+}
+
 func mustRunCmdWithStdin(t *testing.T, client *testClient, cmd string, stdin io.Reader) string {
 	t.Helper()
-	out, err := runCmdWithStdin(t, client.ssh, cmd, stdin)
-	require.NoError(t, err, "command %q\noutput: %s", cmd, out)
-	return out
+	var buf strings.Builder
+	err := sshRun(client.ssh, cmd, WithStdin(stdin), WithStdout(&buf))
+	require.NoError(t, err, "command %q\noutput: %s", cmd, buf)
+	return buf.String()
 }
 
 func provision(t *testing.T, client *testClient) {

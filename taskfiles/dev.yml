@@ -14,6 +14,7 @@ vars:
     -p {{.VM_SSH_PORT}}
     -o StrictHostKeyChecking=accept-new
     -o UserKnownHostsFile={{.KNOWN_HOSTS}}
+    -T
 
 
 tasks:
@@ -81,3 +82,9 @@ tasks:
     silent: true
     cmds:
       - ssh {{.SSH_OPTS}} {{.VM_USER}}@localhost {{.CLI_ARGS}}
+
+  raw-ssh:
+    desc: "Run selenite SSH command for binary output"
+    deps: [_keygen]
+    cmds:
+      - ssh {{.SSH_OPTS}} {{.VM_USER}}@localhost {{.CLI_ARGS}}      

@@ -53,6 +53,19 @@ func TestCheckPermissionDenied(t *testing.T) {
 }
 
 func TestRequirePermission(t *testing.T) {
+	makeApp := func() *cli.Command {
+		return &cli.Command{
+			Name: "test",
+			Commands: []*cli.Command{
+				{
+					Name:   "machine-info",
+					Before: requirePermission("machine/info", access.GetVerb),
+					Action: func(_ context.Context, _ *cli.Command) error { return nil },
+				},
+			},
+		}
+	}
+
 	t.Run("allowed", func(t *testing.T) {
 		cfg := v1.AccessConfig{
 			Roles: []v1.Role{{
@@ -62,15 +75,13 @@ func TestRequirePermission(t *testing.T) {
 			Users: []v1.User{{Name: testUser, Roles: []string{"viewer"}}},
 		}
 		ctx := makeRBACCtx(t, cfg)
-		before := requirePermission("machine/info", access.GetVerb)
-		_, err := before(ctx, &cli.Command{})
+		err := makeApp().Run(ctx, []string{"test", "machine-info"})
 		require.NoError(t, err)
 	})
 
 	t.Run("denied", func(t *testing.T) {
 		ctx := makeRBACCtx(t, v1.AccessConfig{Users: []v1.User{{Name: testUser}}})
-		before := requirePermission("machine/info", access.GetVerb)
-		_, err := before(ctx, &cli.Command{})
+		err := makeApp().Run(ctx, []string{"test", "machine-info"})
 		require.ErrorContains(t, err, "permission denied:")
 	})
 }
@@ -83,7 +94,7 @@ func TestRequirePermissionForArg(t *testing.T) {
 			Commands: []*cli.Command{
 				{
 					Name:   "deploy",
-					Before: requirePermissionForArg("stack", access.CreateVerb),
+					Before: requirePermission("stack/{0}", access.CreateVerb),
 					Action: func(_ context.Context, _ *cli.Command) error { return nil },
 				},
 			},

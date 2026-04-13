@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
+	"strconv"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/charmbracelet/ssh"
@@ -102,13 +104,15 @@ func (p ptyWriter) Write(b []byte) (int, error) {
 
 func prepareCmdForWish(cmd *cli.Command, sess ssh.Session) {
 	if sess != nil {
-		cmd.Reader = sess
-		var w io.Writer = sess.Stderr()
+		var stdout io.Writer = sess
+		var stderr io.Writer = sess.Stderr()
 		if _, _, active := sess.Pty(); active {
-			w = ptyWriter{w}
+			stdout = ptyWriter{stdout}
+			stderr = ptyWriter{stderr}
 		}
-		cmd.Writer = w
-		cmd.ErrWriter = w
+		cmd.Reader = sess
+		cmd.Writer = stdout
+		cmd.ErrWriter = stderr
 	}
 	cli.HelpFlag = nil
 	cmd.CommandNotFound = func(ctx context.Context, c *cli.Command, s string) {
@@ -134,6 +138,19 @@ func shellCommand(sess ssh.Session) *cli.Command {
 			}
 			return shell.Shell(ctx, sess)
 		},
+	}
+}
+
+func beforeChecks(funcs ...cli.BeforeFunc) cli.BeforeFunc {
+	return func(ctx context.Context, c *cli.Command) (context.Context, error) {
+		var err error
+		for _, f := range funcs {
+			ctx, err = f(ctx, c)
+			if err != nil {
+				return ctx, err
+			}
+		}
+		return ctx, nil
 	}
 }
 
@@ -184,17 +201,19 @@ func checkPermission(ctx context.Context, resource string, verb access.AccessVer
 	return nil
 }
 
-// requirePermission returns a cli.BeforeFunc that enforces a static resource/verb pair.
-func requirePermission(resource string, verb access.AccessVerb) cli.BeforeFunc {
-	return func(ctx context.Context, c *cli.Command) (context.Context, error) {
-		return ctx, checkPermission(ctx, resource, verb)
-	}
-}
+var placeholderRe = regexp.MustCompile(`\{\d+\}`)
 
-// requirePermissionForArg returns a cli.BeforeFunc that builds the resource from a
-// prefix and the first positional argument.
-func requirePermissionForArg(prefix string, verb access.AccessVerb) cli.BeforeFunc {
+func requirePermission(template string, verb access.AccessVerb) cli.BeforeFunc {
 	return func(ctx context.Context, c *cli.Command) (context.Context, error) {
-		return ctx, checkPermission(ctx, prefix+"/"+c.Args().First(), verb)
+		args := c.Args().Slice()
+		resource := placeholderRe.ReplaceAllStringFunc(template, func(match string) string {
+			idxStr := match[1 : len(match)-1] // strip { }
+			idx, err := strconv.Atoi(idxStr)
+			if err != nil || idx >= len(args) {
+				return "*"
+			}
+			return args[idx]
+		})
+		return ctx, checkPermission(ctx, resource, verb)
 	}
 }

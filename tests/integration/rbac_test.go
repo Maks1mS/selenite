@@ -42,6 +42,10 @@ var protectedCommands = []commandRBACCase{
 	{[]string{"", "infra", "secret", "create", "mysecret"}, "infra/secret/mysecret", "create"},
 	{[]string{"", "infra", "secret", "remove", "mysecret"}, "infra/secret/mysecret", "delete"},
 	{[]string{"", "infra", "secret", "list"}, "infra/secret", "list"},
+	// volume
+	{[]string{"", "infra", "volume", "export", "myvolume"}, "infra/volume/myvolume/data", "get"},
+	{[]string{"", "infra", "volume", "import", "myvolume"}, "infra/volume/myvolume/data", "update"},
+	{[]string{"", "infra", "volume", "prune"}, "infra/volume", "delete"},
 }
 
 // rbacCtx builds a context that mimics what the SSH session middleware injects.
