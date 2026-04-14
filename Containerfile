@@ -44,7 +44,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
     -o /sysctl-helper \
     ./cmd/sysctl-helper
 
-FROM altlinux.space/alt-atomic/core-minimal/nightly:20260409@sha256:d26f1069ce8c722571bc345fd38a3b5490946a5056619fe23cf30eec8be6a0af
+FROM altlinux.space/alt-atomic/core-minimal/nightly:20260414@sha256:20226a59d1f81435c5e23c930f66258a809d552c40d13c593e69a2422e204f23
 
 ARG DEV
 ENV DEV=$DEV
