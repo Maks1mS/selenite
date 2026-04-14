@@ -8,12 +8,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
 
 	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
 	config "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
+	"altlinux.space/alt-atomic-lab/selenite/internal/version"
 )
 
 const (
@@ -146,6 +148,9 @@ func (m *machineManager) Info(ctx context.Context, w io.Writer) error {
 	_, _ = fmt.Fprintf(w, "Kernel:         %s\n", strings.TrimSpace(string(kernel)))
 	_, _ = fmt.Fprintf(w, "Podman:         %s\n", podmanVer.Version)
 	_, _ = fmt.Fprintf(w, "Podman Compose: %s\n", podmanVer.ComposeVersion)
+	_, _ = fmt.Fprintf(w, "Version:        %s\n", version.Version)
+	_, _ = fmt.Fprintf(w, "Git:            %s\n", version.GitCommit)
+	_, _ = fmt.Fprintf(w, "Go:             %s\n", runtime.Version())
 	_, _ = fmt.Fprintf(w, "Image Status:   %s\n", booted.Status)
 	if img.Image.Image != "" {
 		_, _ = fmt.Fprintf(w, "Image:          %s:%s\n", img.Image.Transport, img.Image.Image)
