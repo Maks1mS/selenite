@@ -44,7 +44,13 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
     -o /sysctl-helper \
     ./cmd/sysctl-helper
 
-FROM altlinux.space/alt-atomic/core-minimal/nightly:20260414@sha256:20226a59d1f81435c5e23c930f66258a809d552c40d13c593e69a2422e204f23
+RUN CGO_ENABLED=1 GOOS=linux go build \
+    -ldflags="-s -w" \
+    -trimpath \
+    -o /netbird-helper \
+    ./cmd/netbird-helper    
+
+FROM altlinux.space/alt-atomic/core-minimal/nightly:20260415@sha256:20e260eab949bee29c3404bf6f2a072680bbf9df8dc1388d6bc822abfbbf5b32
 
 ARG DEV
 ENV DEV=$DEV
@@ -78,6 +84,10 @@ RUN chown root:_selenite-controller /usr/libexec/selenite-machine-executor && \
 COPY --from=selenite-controller /sysctl-helper /usr/libexec/selenite-controller/sysctl-helper
 RUN chown root:_selenite-controller /usr/libexec/selenite-controller/sysctl-helper && \
     chmod 4750 /usr/libexec/selenite-controller/sysctl-helper
+
+COPY --from=selenite-controller /netbird-helper /usr/libexec/selenite-controller/netbird-helper
+RUN chown root:_selenite-controller /usr/libexec/selenite-controller/netbird-helper && \
+    chmod 4750 /usr/libexec/selenite-controller/netbird-helper
 
 WORKDIR /
 CMD ["/sbin/init"]

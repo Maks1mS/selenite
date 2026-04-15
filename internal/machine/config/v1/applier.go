@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -13,7 +14,10 @@ import (
 	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
 )
 
-const sysctlHelperBin = "/usr/libexec/selenite-controller/sysctl-helper"
+const (
+	sysctlHelperBin  = "/usr/libexec/selenite-controller/sysctl-helper"
+	netbirdHelperBin = "/usr/libexec/selenite-controller/netbird-helper"
+)
 
 type ModuleApplier interface {
 	Name() string
@@ -35,10 +39,15 @@ func NewApplier(cfg, prev *MachineConfig, r executil.Runner, s Store) *Applier {
 	if prev != nil {
 		prevSysctl = prev.Sysctl.Params
 	}
+	var prevNetbird NetbirdConfig
+	if prev != nil {
+		prevNetbird = prev.Netbird
+	}
 	return &Applier{
 		modules: []ModuleApplier{
 			NewAccessApplier(cfg.Access),
 			NewSysctlApplier(cfg.Sysctl.Params, prevSysctl, r),
+			NewNetbirdApplier(cfg.Netbird, prevNetbird, r),
 		},
 		prev:  prev,
 		cfg:   cfg,
@@ -56,6 +65,7 @@ func (a *Applier) Apply(ctx context.Context) error {
 	var applied []ModuleApplier
 	for _, m := range a.modules {
 		if err := m.Apply(ctx); err != nil {
+			_ = m.Rollback(ctx)
 			for i := len(applied) - 1; i >= 0; i-- {
 				_ = applied[i].Rollback(ctx)
 			}
@@ -65,7 +75,9 @@ func (a *Applier) Apply(ctx context.Context) error {
 	}
 
 	if err := a.store.Save(a.cfg); err != nil {
-		// does it look like we should do a rollback?
+		for i := len(applied) - 1; i >= 0; i-- {
+			_ = applied[i].Rollback(ctx)
+		}
 		return fmt.Errorf("persist config: %w", err)
 	}
 
@@ -173,6 +185,85 @@ func (a *SysctlApplier) runSysctlHelper(ctx context.Context, params map[string]s
 	)
 	if err != nil {
 		return fmt.Errorf("%w: %s", err, stderr.String())
+	}
+	return nil
+}
+
+type NetbirdApplier struct {
+	newParams  NetbirdConfig
+	prevParams NetbirdConfig
+	backupDone bool
+	r          executil.Runner
+}
+
+func NewNetbirdApplier(newParams, prevParams NetbirdConfig, r executil.Runner) *NetbirdApplier {
+	return &NetbirdApplier{newParams: newParams, prevParams: prevParams, r: r}
+}
+
+func (a *NetbirdApplier) Name() string {
+	return "netbird"
+}
+
+func (a *NetbirdApplier) Validate(_ context.Context) error {
+	if a.newParams.Enabled {
+		if a.newParams.SetupKey == "" {
+			return errors.New("setup_key is empty")
+		}
+	}
+	return nil
+}
+
+func (a *NetbirdApplier) Apply(ctx context.Context) error {
+	if reflect.DeepEqual(a.newParams, a.prevParams) {
+		return nil
+	}
+
+	if err := a.r.Run(ctx, netbirdHelperBin, []string{"backup"}); err != nil {
+		return fmt.Errorf("netbird-helper backup: %w", err)
+	}
+	a.backupDone = true
+
+	needsClear := a.newParams.Enabled && a.newParams.SetupKey != a.prevParams.SetupKey
+	clearState := "0"
+	if needsClear {
+		clearState = "1"
+	}
+
+	enabled := "0"
+	if a.newParams.Enabled {
+		enabled = "1"
+	}
+
+	if err := a.r.Run(
+		ctx,
+		netbirdHelperBin,
+		[]string{"apply"},
+		executil.WithEnv("SELENITE_NETBIRD_HELPER_ENABLED", enabled),
+		executil.WithEnv("SELENITE_NETBIRD_HELPER_SETUP_KEY", a.newParams.SetupKey),
+		executil.WithEnv("SELENITE_NETBIRD_HELPER_CLEAR_STATE", clearState),
+	); err != nil {
+		return fmt.Errorf("netbird-helper apply: %w", err)
+	}
+	return nil
+}
+
+func (a *NetbirdApplier) Rollback(ctx context.Context) error {
+	if !a.backupDone {
+		return nil
+	}
+
+	enabled := "0"
+	if a.prevParams.Enabled {
+		enabled = "1"
+	}
+
+	if err := a.r.Run(
+		ctx,
+		netbirdHelperBin,
+		[]string{"restore"},
+		executil.WithEnv("SELENITE_NETBIRD_HELPER_ENABLED", enabled),
+	); err != nil {
+		return fmt.Errorf("netbird-helper restore: %w", err)
 	}
 	return nil
 }

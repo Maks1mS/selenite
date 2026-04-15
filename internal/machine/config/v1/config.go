@@ -33,9 +33,15 @@ type SysctlConfig struct {
 	Params map[string]string `yaml:"params"`
 }
 
+type NetbirdConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	SetupKey string `yaml:"setup_key"`
+}
+
 type MachineConfig struct {
-	Sysctl SysctlConfig `yaml:"sysctl"`
-	Access AccessConfig `yaml:"access"`
+	Sysctl  SysctlConfig  `yaml:"sysctl"`
+	Access  AccessConfig  `yaml:"access"`
+	Netbird NetbirdConfig `yaml:"netbird"`
 }
 
 func ParseMachineConfig(b []byte) (*MachineConfig, error) {

@@ -8,3 +8,4 @@ modules:
         - nftables
         - podman-compose
         - sysctl-conf-userns
+        - netbird

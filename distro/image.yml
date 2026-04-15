@@ -26,7 +26,7 @@ modules:
       targets:
         - selenite-controller.service
         - selenite-setup.service
-      enabled: true      
+      enabled: true
 
   - name: Base cleanup
     type: include
