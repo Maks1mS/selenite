@@ -8,49 +8,21 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags="-s -w" \
-    -trimpath \
-    -o /selenite-controller \
-    ./cmd/selenite-controller
 
-RUN CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags="-s -w" \
-    -trimpath \
-    -o /podman-compose-helper \
-    ./cmd/podman-compose-helper
+RUN mkdir /out && \
+    for cmd in \
+        selenite-controller \
+        podman-compose-helper \
+        podman-secret-helper \
+        podman-volume-helper \
+        selenite-machine-helper \
+        sysctl-helper \
+        netbird-helper; \
+    do \
+        CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -trimpath -o /out/$cmd ./cmd/$cmd; \
+    done
 
-RUN CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags="-s -w" \
-    -trimpath \
-    -o /podman-secret-helper \
-    ./cmd/podman-secret-helper
-
-RUN CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags="-s -w" \
-    -trimpath \
-    -o /podman-volume-helper \
-    ./cmd/podman-volume-helper
-
-RUN CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags="-s -w" \
-    -trimpath \
-    -o /selenite-machine-executor \
-    ./cmd/selenite-machine-executor
-
-RUN CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags="-s -w" \
-    -trimpath \
-    -o /sysctl-helper \
-    ./cmd/sysctl-helper
-
-RUN CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags="-s -w" \
-    -trimpath \
-    -o /netbird-helper \
-    ./cmd/netbird-helper    
-
-FROM altlinux.space/alt-atomic/core-minimal/nightly:20260415@sha256:20e260eab949bee29c3404bf6f2a072680bbf9df8dc1388d6bc822abfbbf5b32
+FROM altlinux.space/alt-atomic/core-minimal/nightly:20260416@sha256:d24116b8461da6dd7fd51d1ba65d83d7a6b7337b8692169aef52fc81706bae4d
 
 ARG DEV
 ENV DEV=$DEV
@@ -63,31 +35,18 @@ RUN --mount=type=bind,source=./distro/image.yml,target=/etc/apm/image.yml \
     --mount=type=bind,source=./distro/resources,target=/etc/apm/resources \
     apm system image build
 
-COPY --from=selenite-controller /selenite-controller /usr/bin/selenite-controller
-
-COPY --from=selenite-controller /podman-compose-helper /usr/libexec/selenite-controller/podman-compose-helper
-RUN chown root:_selenite-controller /usr/libexec/selenite-controller/podman-compose-helper && \
-    chmod 4750 /usr/libexec/selenite-controller/podman-compose-helper
-
-COPY --from=selenite-controller /podman-secret-helper /usr/libexec/selenite-controller/podman-secret-helper
-RUN chown root:_selenite-controller /usr/libexec/selenite-controller/podman-secret-helper && \
-    chmod 4750 /usr/libexec/selenite-controller/podman-secret-helper
-
-COPY --from=selenite-controller /podman-volume-helper /usr/libexec/selenite-controller/podman-volume-helper
-RUN chown root:_selenite-controller /usr/libexec/selenite-controller/podman-volume-helper && \
-    chmod 4750 /usr/libexec/selenite-controller/podman-volume-helper
-
-COPY --from=selenite-controller /selenite-machine-executor /usr/libexec/selenite-machine-executor
-RUN chown root:_selenite-controller /usr/libexec/selenite-machine-executor && \
-    chmod 4750 /usr/libexec/selenite-machine-executor
-
-COPY --from=selenite-controller /sysctl-helper /usr/libexec/selenite-controller/sysctl-helper
-RUN chown root:_selenite-controller /usr/libexec/selenite-controller/sysctl-helper && \
-    chmod 4750 /usr/libexec/selenite-controller/sysctl-helper
-
-COPY --from=selenite-controller /netbird-helper /usr/libexec/selenite-controller/netbird-helper
-RUN chown root:_selenite-controller /usr/libexec/selenite-controller/netbird-helper && \
-    chmod 4750 /usr/libexec/selenite-controller/netbird-helper
+COPY --from=selenite-controller /out/selenite-controller /usr/bin/selenite-controller
+RUN --mount=from=selenite-controller,source=/out,target=/out \
+    for cmd in \
+        podman-compose-helper \
+        podman-secret-helper \
+        podman-volume-helper \
+        selenite-machine-helper \
+        sysctl-helper \
+        netbird-helper; \
+    do \
+        install -o root -g _selenite-controller -m 4750 /out/$cmd /usr/libexec/selenite-controller/$cmd; \
+    done
 
 WORKDIR /
 CMD ["/sbin/init"]

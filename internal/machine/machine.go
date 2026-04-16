@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	ExecutorBin = "/usr/libexec/selenite-machine-executor"
+	ExecutorBin = "/usr/libexec/selenite-controller/selenite-machine-helper"
 )
 
 type machineManager struct {

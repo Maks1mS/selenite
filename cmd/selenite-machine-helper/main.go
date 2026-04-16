@@ -14,7 +14,7 @@ func main() {
 	runtime.LockOSThread()
 
 	if len(os.Args) < 2 {
-		cmdutils.Fatal("usage: selenite-machine-executor <command>\n")
+		cmdutils.Fatal("usage: selenite-machine-helper <command>\n")
 	}
 
 	command := os.Args[1]
