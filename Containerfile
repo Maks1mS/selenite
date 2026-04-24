@@ -22,7 +22,7 @@ RUN mkdir /out && \
         CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -trimpath -o /out/$cmd ./cmd/$cmd; \
     done
 
-FROM altlinux.space/alt-atomic/core-minimal/nightly:20260416@sha256:d24116b8461da6dd7fd51d1ba65d83d7a6b7337b8692169aef52fc81706bae4d
+FROM altlinux.space/alt-atomic/core-minimal/nightly:20260424@sha256:073c58baca3ee66ccb931a9c2e9cf75da2a07985699420134a3777c732e1addf
 
 ARG DEV
 ENV DEV=$DEV
