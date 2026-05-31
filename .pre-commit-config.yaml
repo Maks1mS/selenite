@@ -10,8 +10,18 @@ repos:
         entry: task lint
         language: system
         pass_filenames: false
+      - id: license-headers
+        name: Run license-headers
+        entry: task license-headers
+        language: system
+        pass_filenames: false
+      - id: license-check
+        name: Run license-check
+        entry: task license-check
+        language: system
+        pass_filenames: false
       - id: test-unit
         name: Run test-unit
         entry: task test-unit
         language: system
-        pass_filenames: false        
+        pass_filenames: false

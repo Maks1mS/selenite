@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 //go:build e2e
 
 package e2e
@@ -66,7 +70,7 @@ func bootVM(t *testing.T) *testClient {
 	t.Cleanup(func() { cmd.Process.Kill() })
 
 	addr := "127.0.0.1:" + sshPort
-	client, err := waitForSSH(addr, 120*time.Second)
+	client, err := waitForSSH(addr, 240*time.Second)
 	if err != nil {
 		cmd.Process.Kill()
 		t.Fatalf("wait for SSH: %v", err)

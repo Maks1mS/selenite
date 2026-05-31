@@ -4,6 +4,10 @@ version: '3'
 
 vars:
   GOLANGCI_LINT_BIN: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@8f3b0c7ed018e57905fbd873c697e0b1ede605a5 # v2.11.4
+  GO_LICENSES_BIN: go run github.com/google/go-licenses/v2@3e084b0caf710f7bfead967567539214f598c0a2 # v2.0.1
+  ADDLICENSE_BIN: go run github.com/google/addlicense@b289835c0741ba2fb92dd5f61af070e79c69a55e # v1.2.0
+  ALLOWED_LICENSES: MIT,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,MPL-2.0,MPL-2.0-no-copyleft-exception
+  ADDLICENSE_IGNORE: "-ignore=vendor/** -ignore=.git/** -ignore=**/*.yml -ignore=**/*.yaml"
 
 includes:
   dev:
@@ -35,4 +39,31 @@ tasks:
       E2E_PARALLELISM: '4'
     cmds:
       - "./scripts/prepare-e2e.sh"
-      - go test -tags=e2e -count=1 -p {{.E2E_PARALLELISM}} -v ./tests/e2e/
+      - go test -tags=e2e -timeout 10m -count=1 -p {{.E2E_PARALLELISM}} -v ./tests/e2e/
+
+  license-headers:
+    desc: "Check that all source files have the MPL-2.0 header"
+    cmds:
+      - "{{.ADDLICENSE_BIN}} -check -l mpl {{.ADDLICENSE_IGNORE}} ."
+
+  license-headers-fix:
+    desc: "Add the MPL-2.0 header to source files that are missing it"
+    cmds:
+      - "{{.ADDLICENSE_BIN}} -l mpl {{.ADDLICENSE_IGNORE}} ."
+
+  license-check:
+    desc: "Check dependency licenses are compatible with MPL-2.0"
+    preconditions:
+      - sh: "test -f go.mod"
+        msg: "go.mod not found"
+    cmds:
+      - "{{.GO_LICENSES_BIN}} check ./... --allowed_licenses={{.ALLOWED_LICENSES}}"
+
+  license-report:
+    desc: "Generate third-party license report"
+    preconditions:
+      - sh: "test -f go.mod"
+        msg: "go.mod not found"
+    cmds:
+      - "{{.GO_LICENSES_BIN}} report ./... > THIRD_PARTY_LICENSES.md"
+      - 'echo "Report written to THIRD_PARTY_LICENSES.md"'
