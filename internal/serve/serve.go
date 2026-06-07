@@ -82,6 +82,7 @@ func authMiddleware(next ssh.Handler) ssh.Handler {
 	return func(sess ssh.Session) {
 		cfg, err := v1.ConfigStore{}.Load()
 		if err != nil {
+			log.Warn("failed to load config", "err", err)
 			_ = sess.Exit(1)
 			return
 		}
@@ -103,6 +104,7 @@ func authMiddleware(next ssh.Handler) ssh.Handler {
 
 		enforcer, err := access.NewEnforcer(cfg.Access)
 		if err != nil {
+			log.Warn("failed to create new enforces", "err", err)
 			_ = sess.Exit(1)
 			return
 		}
