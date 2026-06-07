@@ -50,4 +50,3 @@ RUN --mount=from=selenite-controller,source=/out,target=/out \
 
 WORKDIR /
 CMD ["/sbin/init"]
-

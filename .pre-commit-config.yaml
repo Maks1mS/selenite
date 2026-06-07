@@ -1,6 +1,13 @@
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
   - repo: https://code.forgejo.org/forgejo/runner
-    rev: 6d1d83364da92c634316dea2d9c66504b1c535bc # v12.7.1
+    rev: bbac773579d5f93ffe0c266a114d7312daab146a # v12.10.2
     hooks:
       - id: forgejo-runner-validate
   - repo: local

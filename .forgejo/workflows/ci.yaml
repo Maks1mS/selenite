@@ -40,7 +40,7 @@ jobs:
             --tag $LOCAL_BUILD_NAME \
             --cache-from  "${CACHE_IMAGE}" \
             --cache-to    "${CACHE_IMAGE}" \
-            . 
+            .
 
       - name: Push images
         uses: alt-atomic/actions/push-and-sign@6a9494b07dbc1c84c85efc2aca800f86135c0acb
