@@ -8,3 +8,5 @@ touch /var/lib/selenite-controller/.ssh/authorized_keys
 chown -R _selenite-controller:_selenite-controller /var/lib/selenite-controller
 chmod 700 /var/lib/selenite-controller/.ssh
 chmod 600 /var/lib/selenite-controller/.ssh/authorized_keys
+
+machinectl shell _selenite-podman-executor@ /usr/bin/systemctl --user enable --now podman.socket
