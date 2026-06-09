@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  IMAGE_NAME: alt-atomic-lab/selenite/cloud
+  IMAGE_NAME: alt-atomic/selenite/cloud
   REGISTRY: altlinux.space
   CACHE_IMAGE: altlinux.space/alt-atomic/selenite-cache
   LOCAL_BUILD_NAME: localhost/selenite
