@@ -1,0 +1,11 @@
+
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        "security:openssf-scorecard",
+        "schedule:nonOfficeHours",
+        "local>alt-atomic/renovate:common-actions"
+    ],
+    "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"]
+}
