@@ -15,7 +15,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
+	"altlinux.space/alt-atomic/selenite/internal/executil"
 )
 
 type runCall struct {

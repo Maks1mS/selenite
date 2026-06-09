@@ -15,7 +15,7 @@ import (
 
 	gossh "golang.org/x/crypto/ssh"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
+	"altlinux.space/alt-atomic/selenite/internal/executil"
 )
 
 const (

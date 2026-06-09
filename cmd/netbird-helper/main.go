@@ -13,7 +13,7 @@ import (
 
 	cp "github.com/otiai10/copy"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/cmdutils"
+	"altlinux.space/alt-atomic/selenite/internal/cmdutils"
 )
 
 const (

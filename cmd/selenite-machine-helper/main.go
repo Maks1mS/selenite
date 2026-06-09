@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"syscall"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/cmdutils"
+	"altlinux.space/alt-atomic/selenite/internal/cmdutils"
 )
 
 const bootcPath = "/usr/bin/bootc"

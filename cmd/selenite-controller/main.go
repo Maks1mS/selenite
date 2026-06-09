@@ -10,7 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/app"
+	"altlinux.space/alt-atomic/selenite/internal/app"
 )
 
 func main() {

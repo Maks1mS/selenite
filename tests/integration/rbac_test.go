@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/access"
-	v1 "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
-	"altlinux.space/alt-atomic-lab/selenite/internal/serve"
+	"altlinux.space/alt-atomic/selenite/internal/access"
+	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
+	"altlinux.space/alt-atomic/selenite/internal/serve"
 )
 
 // commandRBACCase describes an RBAC-protected CLI command and the permission it requires.

@@ -11,8 +11,8 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/access"
-	"altlinux.space/alt-atomic-lab/selenite/internal/machine"
+	"altlinux.space/alt-atomic/selenite/internal/access"
+	"altlinux.space/alt-atomic/selenite/internal/machine"
 )
 
 const imagePlaceholder = "<image>"

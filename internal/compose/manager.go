@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
+	"altlinux.space/alt-atomic/selenite/internal/executil"
 )
 
 var BaseStackDir = "/var/lib/selenite-podman-executor"

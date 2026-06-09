@@ -5,6 +5,8 @@ FROM golang:1.26.4@sha256:68cb6d68bed024785b69195b89af7ac7a444f27791435f98647edf
 WORKDIR /app
 
 COPY go.mod go.sum ./
+
+ENV GOPROXY=https://pkgs-proxy.deploy.coolify.alt-gnome.ru/go,direct
 RUN go mod download
 
 COPY . .

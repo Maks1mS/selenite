@@ -22,7 +22,7 @@ require-template-schema-exists: true
 template: testify
 template-schema: '{{.Template}}.schema.json'
 packages:
-  altlinux.space/alt-atomic-lab/selenite/internal/executil:
+  altlinux.space/alt-atomic/selenite/internal/executil:
     config:
       dir: "{{.InterfaceDir}}/mocks"
       filename: "mock_runner.go"

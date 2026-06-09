@@ -17,9 +17,9 @@ import (
 	"strings"
 	"syscall"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
-	config "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
-	"altlinux.space/alt-atomic-lab/selenite/internal/version"
+	"altlinux.space/alt-atomic/selenite/internal/executil"
+	config "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
+	"altlinux.space/alt-atomic/selenite/internal/version"
 )
 
 const (

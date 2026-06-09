@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/executil/mocks"
-	config "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
+	"altlinux.space/alt-atomic/selenite/internal/executil/mocks"
+	config "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
 )
 
 type noopStore struct{}

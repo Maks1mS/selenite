@@ -1,4 +1,4 @@
-module altlinux.space/alt-atomic-lab/selenite
+module altlinux.space/alt-atomic/selenite
 
 go 1.25.9
 

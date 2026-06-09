@@ -9,7 +9,7 @@ import (
 
 	docs "github.com/urfave/cli-docs/v3"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/serve"
+	"altlinux.space/alt-atomic/selenite/internal/serve"
 )
 
 func main() {

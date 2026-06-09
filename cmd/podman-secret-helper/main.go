@@ -13,7 +13,7 @@ import (
 	"strings"
 	"syscall"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/cmdutils"
+	"altlinux.space/alt-atomic/selenite/internal/cmdutils"
 )
 
 const (

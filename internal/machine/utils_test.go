@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
-	"altlinux.space/alt-atomic-lab/selenite/internal/executil/mocks"
+	"altlinux.space/alt-atomic/selenite/internal/executil"
+	"altlinux.space/alt-atomic/selenite/internal/executil/mocks"
 )
 
 func TestPodmanVersion(t *testing.T) {

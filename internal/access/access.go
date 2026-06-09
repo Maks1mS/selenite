@@ -10,7 +10,7 @@ import (
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 
-	v1 "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
+	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
 )
 
 type AccessVerb int

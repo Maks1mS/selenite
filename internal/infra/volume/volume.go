@@ -11,7 +11,7 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
+	"altlinux.space/alt-atomic/selenite/internal/executil"
 )
 
 const (

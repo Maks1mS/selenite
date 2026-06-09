@@ -10,8 +10,8 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/access"
-	"altlinux.space/alt-atomic-lab/selenite/internal/infra/volume"
+	"altlinux.space/alt-atomic/selenite/internal/access"
+	"altlinux.space/alt-atomic/selenite/internal/infra/volume"
 )
 
 func infraCommand() *cli.Command {

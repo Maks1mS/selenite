@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	v1 "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
+	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
 )
 
 func cfg(roles []v1.Role, users []v1.User) v1.AccessConfig {

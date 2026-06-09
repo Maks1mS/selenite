@@ -7,7 +7,7 @@ package mocks
 import (
 	"context"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/executil"
+	"altlinux.space/alt-atomic/selenite/internal/executil"
 	mock "github.com/stretchr/testify/mock"
 )
 

@@ -11,8 +11,8 @@ import (
 	"github.com/charmbracelet/ssh"
 	"github.com/urfave/cli/v3"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/access"
-	"altlinux.space/alt-atomic-lab/selenite/internal/compose"
+	"altlinux.space/alt-atomic/selenite/internal/access"
+	"altlinux.space/alt-atomic/selenite/internal/compose"
 )
 
 func stackCommand(sess ssh.Session) *cli.Command {

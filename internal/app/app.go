@@ -11,7 +11,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/serve"
+	"altlinux.space/alt-atomic/selenite/internal/serve"
 )
 
 func Run(ctx context.Context) error {

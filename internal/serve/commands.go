@@ -18,9 +18,9 @@ import (
 	"github.com/urfave/cli/v3"
 	gossh "golang.org/x/crypto/ssh"
 
-	"altlinux.space/alt-atomic-lab/selenite/internal/access"
-	v1 "altlinux.space/alt-atomic-lab/selenite/internal/machine/config/v1"
-	"altlinux.space/alt-atomic-lab/selenite/internal/shell"
+	"altlinux.space/alt-atomic/selenite/internal/access"
+	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
+	"altlinux.space/alt-atomic/selenite/internal/shell"
 )
 
 type ctxKey string
