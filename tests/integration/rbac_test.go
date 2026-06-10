@@ -83,10 +83,17 @@ func exactPermCfg(user, resource, verb string) v1.AccessConfig {
 // newTestApp returns AppCmd(nil) with writers set to io.Discard.
 func newTestApp() *cli.Command {
 	app := serve.AppCmd(nil)
+	configureTestAppRecursive(app)
+	return app
+}
+
+func configureTestAppRecursive(app *cli.Command) {
 	app.Writer = io.Discard
 	app.ErrWriter = io.Discard
 	app.Reader = strings.NewReader("")
-	return app
+	for _, sub := range app.Commands {
+		configureTestAppRecursive(sub)
+	}
 }
 
 // isRBACDenial reports whether err is an RBAC permission denial from checkPermission.
