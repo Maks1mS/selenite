@@ -7,8 +7,8 @@ package access
 import (
 	"fmt"
 
-	"github.com/casbin/casbin/v2"
-	"github.com/casbin/casbin/v2/model"
+	"github.com/casbin/casbin/v3"
+	"github.com/casbin/casbin/v3/model"
 
 	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
 )
@@ -71,7 +71,7 @@ func NewEnforcer(cfg v1.AccessConfig) (*casbin.Enforcer, error) {
 		return nil, fmt.Errorf("casbin model: %w", err)
 	}
 
-	e, err := casbin.NewEnforcer(m, false)
+	e, err := casbin.NewEnforcer(m)
 	if err != nil {
 		return nil, fmt.Errorf("casbin enforcer: %w", err)
 	}
