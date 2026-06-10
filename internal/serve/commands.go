@@ -71,7 +71,7 @@ func AppCmd(sess ssh.Session) *cli.Command {
 		Usage:                         "Immutable server OS for managing podman compose stacks",
 		CustomRootCommandHelpTemplate: helpTemplate,
 		Commands: []*cli.Command{
-			stackCommand(sess),
+			stackCommand(),
 			infraCommand(),
 			machineCommands(),
 			shellCommand(sess),

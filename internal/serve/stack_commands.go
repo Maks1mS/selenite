@@ -8,19 +8,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/charmbracelet/ssh"
 	"github.com/urfave/cli/v3"
 
 	"altlinux.space/alt-atomic/selenite/internal/access"
 	"altlinux.space/alt-atomic/selenite/internal/compose"
 )
 
-func stackCommand(sess ssh.Session) *cli.Command {
+func stackCommand() *cli.Command {
 	cmd := &cli.Command{
 		Name:  "stack",
 		Usage: "Manage compose stacks",
 		Commands: []*cli.Command{
-			stackDeployCommand(sess),
+			stackDeployCommand(),
 			stackListCommand(),
 			stackUpCommand(),
 			stackDownCommand(),
@@ -43,7 +42,7 @@ func requireStackName(ctx context.Context, c *cli.Command) (context.Context, err
 	return ctx, nil
 }
 
-func stackDeployCommand(sess ssh.Session) *cli.Command {
+func stackDeployCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "deploy",
 		Usage:     "Deploy a stack from stdin (compose.yml)",
@@ -53,7 +52,7 @@ func stackDeployCommand(sess ssh.Session) *cli.Command {
 			requirePermission("stack/{0}", access.CreateVerb),
 		),
 		Action: func(ctx context.Context, c *cli.Command) error {
-			return compose.NewManager().Deploy(ctx, c.Args().First(), sess, c.Writer)
+			return compose.NewManager().Deploy(ctx, c.Args().First(), c.Reader, c.Writer)
 		},
 	}
 }
