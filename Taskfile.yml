@@ -33,6 +33,10 @@ tasks:
     cmds:
       - go test -v ./...
 
+  test-integration:
+    cmds:
+      - go test -tags=integration -v ./...
+
   test-e2e:
     desc: "Run e2e tests"
     vars:

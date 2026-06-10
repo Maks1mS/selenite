@@ -69,10 +69,25 @@ jobs:
       - name: Run tests
         run: task test-unit
 
+  test-integration:
+    name: integration tests
+    runs-on: als-huge
+    steps:
+      - *checkout
+
+      - *cache-tools-go
+
+      - *setup-go
+
+      - *install-go-task
+
+      - name: Run tests
+        run: task test-integration
+
   build-image:
     name: Build image
     runs-on: als-huge
-    needs: [checks, test-unit]
+    needs: [checks, test-unit, test-integration]
 
     container:
       image: altlinux.space/alt-atomic/builder-image:sisyphus
