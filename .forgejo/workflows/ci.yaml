@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-    pull_request:
+  pull_request:
 
 env:
   IMAGE_NAME: alt-atomic/selenite/cloud
