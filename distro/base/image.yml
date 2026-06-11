@@ -4,3 +4,4 @@ modules:
     body:
       targets:
         - controller-deps.yml
+        - qemu-guest-agent.yml

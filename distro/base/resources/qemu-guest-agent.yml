@@ -1,0 +1,14 @@
+modules:
+  - name: Install qemu-guest-agent
+    type: packages
+    body:
+      update: true
+      install:
+        - qemu-guest-agent
+
+  - name: Enable qemu-guest-agent.service
+    type: systemd
+    body:
+      enabled: true
+      targets:
+        - qemu-guest-agent.service
