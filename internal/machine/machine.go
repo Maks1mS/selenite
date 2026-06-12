@@ -5,7 +5,6 @@
 package machine
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -132,6 +131,11 @@ func (m *machineManager) Info(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("info: mem: %w", err)
 	}
 
+	totalDisk, availDisk, err := readDiskInfo()
+	if err != nil {
+		return fmt.Errorf("info: disk: %w", err)
+	}
+
 	kernel, err := os.ReadFile("/proc/sys/kernel/osrelease")
 	if err != nil {
 		return fmt.Errorf("info: kernel: %w", err)
@@ -148,7 +152,8 @@ func (m *machineManager) Info(ctx context.Context, w io.Writer) error {
 	img := booted.Image.Status.Booted.Image
 
 	_, _ = fmt.Fprintf(w, "CPU:            %s (%d cores)\n", cpuModel, cpuCores)
-	_, _ = fmt.Fprintf(w, "Memory:         %s / %s\n", formatBytes(availMem), formatBytes(totalMem))
+	_, _ = fmt.Fprintf(w, "Memory:         %s / %s\n", formatBytes(totalMem-availMem), formatBytes(totalMem))
+	_, _ = fmt.Fprintf(w, "Disk:           %s / %s\n", formatBytes(totalDisk-availDisk), formatBytes(totalDisk))
 	_, _ = fmt.Fprintf(w, "Kernel:         %s\n", strings.TrimSpace(string(kernel)))
 	_, _ = fmt.Fprintf(w, "Podman:         %s\n", podmanVer.Version)
 	_, _ = fmt.Fprintf(w, "Podman Compose: %s\n", podmanVer.ComposeVersion)
@@ -166,30 +171,6 @@ func (m *machineManager) Info(ctx context.Context, w io.Writer) error {
 		_, _ = fmt.Fprintf(w, "Timestamp:      %s\n", img.Timestamp)
 	}
 	return nil
-}
-
-func readCPUInfo() (model string, cores int, err error) {
-	f, err := os.Open("/proc/cpuinfo")
-	if err != nil {
-		return "", 0, fmt.Errorf("open /proc/cpuinfo: %w", err)
-	}
-	defer func() { _ = f.Close() }()
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "model name") {
-			if parts := strings.SplitN(line, ":", 2); len(parts) == 2 {
-				model = strings.TrimSpace(parts[1])
-			}
-		} else if strings.HasPrefix(line, "processor") {
-			cores++
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return "", 0, fmt.Errorf("scanner: %w", err)
-	}
-	return model, cores, nil
 }
 
 func (m *machineManager) Reboot(ctx context.Context, w io.Writer) error {

@@ -12,6 +12,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"altlinux.space/alt-atomic/selenite/internal/executil"
 )
@@ -64,6 +65,30 @@ func formatUptime(secs int) string {
 	return strings.Join(parts, " ")
 }
 
+func readCPUInfo() (model string, cores int, err error) {
+	f, err := os.Open("/proc/cpuinfo")
+	if err != nil {
+		return "", 0, fmt.Errorf("open /proc/cpuinfo: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "model name") {
+			if parts := strings.SplitN(line, ":", 2); len(parts) == 2 {
+				model = strings.TrimSpace(parts[1])
+			}
+		} else if strings.HasPrefix(line, "processor") {
+			cores++
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", 0, fmt.Errorf("scanner: %w", err)
+	}
+	return model, cores, nil
+}
+
 func readMeminfo() (totalBytes, availBytes uint64, err error) {
 	f, err := os.Open("/proc/meminfo")
 	if err != nil {
@@ -93,6 +118,17 @@ func readMeminfo() (totalBytes, availBytes uint64, err error) {
 		return 0, 0, fmt.Errorf("scanner: %w", err)
 	}
 	return totalKB * 1024, availKB * 1024, nil
+}
+
+func readDiskInfo() (diskTotal, diskFree uint64, err error) {
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs("/var", &stat); err != nil {
+		return 0, 0, fmt.Errorf("stats: statfs: %w", err)
+	}
+	if stat.Bsize < 0 {
+		return 0, 0, fmt.Errorf("stats: statfs: negative block size %d", stat.Bsize)
+	}
+	return stat.Blocks * uint64(stat.Bsize), stat.Bfree * uint64(stat.Bsize), nil
 }
 
 func formatBytes(b uint64) string {
