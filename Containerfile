@@ -2,6 +2,11 @@
 # RUN apt-get update && apt-get -y install ca-certificates
 FROM golang:1.26.4@sha256:68cb6d68bed024785b69195b89af7ac7a444f27791435f98647edff595aa0479 as selenite-controller
 
+ARG VERSION
+ENV VERSION=$VERSION
+ARG GIT_COMMIT
+ENV GIT_COMMIT=$GIT_COMMIT
+
 WORKDIR /app
 
 COPY go.mod go.sum ./
@@ -20,13 +25,22 @@ RUN mkdir /out && \
         sysctl-helper \
         netbird-helper; \
     do \
-        CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -trimpath -o /out/$cmd ./cmd/$cmd; \
+        CGO_ENABLED=1 \
+        GOOS=linux \
+        go build -ldflags="-s -w \
+            -X altlinux.space/alt-atomic/selenite/internal/version.Version=$VERSION \
+            -X altlinux.space/alt-atomic/selenite/internal/version.Commit=$GIT_COMMIT" \
+            -trimpath -o /out/$cmd ./cmd/$cmd; \
     done
 
 FROM altlinux.space/alt-atomic/core-minimal/stable:20260608@sha256:900ef8654c1bc4f0e127f11287eaa58ce23a98cfe484d338eb2eb283cd7a396e
 
 ARG DEV
 ENV DEV=$DEV
+ARG VERSION
+ENV VERSION=$VERSION
+ARG GIT_COMMIT
+ENV GIT_COMMIT=$GIT_COMMIT
 
 RUN --mount=type=bind,source=./distro/base/image.yml,target=/etc/apm/image.yml \
     --mount=type=bind,source=./distro/base/resources,target=/etc/apm/resources \

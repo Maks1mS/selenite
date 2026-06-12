@@ -5,3 +5,18 @@ modules:
       targets:
         - controller-deps.yml
         - qemu-guest-agent.yml
+
+  - name: Set branding
+    type: branding
+    body:
+      release-overrides:
+        ID: "selenite"
+        IMAGE_ID: "selenite"
+        NAME: "Selenite"
+        PRETTY_NAME: "Selenite"
+        VERSION: "${{ Env.VERSION }}"
+        VERSION_ID: "${{ Env.VERSION }}"
+        VARIANT: "Cloud"
+        VARIANT_ID: "cloud"
+        BUILD_ID: "Selenite ${{ Env.VERSION }}"
+        BUG_REPORT_URL: "https://altlinux.space/alt-atomic/selenite/issues"
