@@ -29,7 +29,7 @@ RUN mkdir /out && \
         GOOS=linux \
         go build -ldflags="-s -w \
             -X altlinux.space/alt-atomic/selenite/internal/version.Version=$VERSION \
-            -X altlinux.space/alt-atomic/selenite/internal/version.Commit=$GIT_COMMIT" \
+            -X altlinux.space/alt-atomic/selenite/internal/version.GitCommit=$GIT_COMMIT" \
             -trimpath -o /out/$cmd ./cmd/$cmd; \
     done
 
