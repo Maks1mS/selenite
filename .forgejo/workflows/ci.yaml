@@ -125,7 +125,7 @@ jobs:
           registry-username: "<token>"
           registry-password: ${{ secrets.REGISTRY_TOKEN }}
           image-name: ${{ env.IMAGE_NAME }}
-          image-tag: ${{ steps.version.outputs.value }}
+          image-tag: ${{ steps.version.outputs.version }}
           local-build-name: ${{ env.LOCAL_BUILD_NAME }}
           cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
           cosign-password: ${{ secrets.COSIGN_PASSWORD }}
