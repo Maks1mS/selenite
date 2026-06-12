@@ -6,7 +6,6 @@ WORKDIR /app
 
 COPY go.mod go.sum ./
 
-ENV GOPROXY=https://pkgs-proxy.deploy.coolify.alt-gnome.ru/go,direct
 RUN go mod download
 
 COPY . .
