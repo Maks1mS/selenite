@@ -19,6 +19,20 @@
                 "digest"
             ],
             "enabled": false
+        },
+        {
+            "description": "Update core-minimal only once per week (on Monday)",
+            "matchDatasources": [
+                "docker"
+            ],
+            "matchPackageNames": [
+                "altlinux.space/alt-atomic/core-minimal/stable"
+            ],
+            "schedule": [
+                "* * * * 1"
+            ],
+            "semanticCommitType": "fix",
+            "semanticCommitScope": ""
         }
     ],
     "postUpdateOptions": [
