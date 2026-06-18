@@ -1,4 +1,11 @@
 modules:
+  - name: Copy root
+    type: copy
+    body:
+      source: root
+      destination: /
+      replace: true
+
   - name: Include
     type: include
     body:
