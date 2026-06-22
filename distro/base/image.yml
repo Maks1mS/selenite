@@ -6,6 +6,14 @@ modules:
       destination: /
       replace: true
 
+  - name: Update kernel
+    type: kernel
+    body:
+      kernel-info:
+        flavour: for-vm
+      initrd:
+        method: dracut
+
   - name: Include
     type: include
     body:
