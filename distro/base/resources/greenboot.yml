@@ -1,0 +1,14 @@
+modules:
+  - name: Install greenboot
+    type: packages
+    body:
+      update: true
+      install:
+        - greenboot
+
+  - name: Enable greenboot services
+    type: systemd
+    body:
+      targets:
+        - greenboot-healthcheck.service
+      enabled: true
