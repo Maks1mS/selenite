@@ -29,7 +29,7 @@ modules:
         ID: "selenite"
         IMAGE_ID: "selenite"
         NAME: "Selenite"
-        PRETTY_NAME: "Selenite"
+        PRETTY_NAME: "Selenite ${{ Env.VERSION }}"
         VERSION: "${{ Env.VERSION }}"
         VERSION_ID: "${{ Env.VERSION }}"
         VARIANT: "Cloud"
