@@ -1,0 +1,6 @@
+================================================================
+[!] Selenite is managed via SSH commands, not interactively.
+
+If you're not here for emergency diagnostics - you're probably
+not supposed to be. See https://seleniteos.ru for documentation.
+================================================================
