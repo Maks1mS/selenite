@@ -6,6 +6,7 @@ package machine
 
 import (
 	"context"
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -28,6 +29,60 @@ func newTestMachine(t *testing.T, runner *mocks.MockRunner) *machineManager {
 		runner: runner,
 		store:  noopStore{},
 	}
+}
+
+func TestLogs(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("default", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(ctx, ExecutorBin, []string{"journalctl", "--no-pager", "--output=short-iso", "-n", "100"}, mock.Anything).
+			Return(nil)
+
+		err := newTestMachine(t, r).Logs(ctx, io.Discard, 100, false, "")
+		require.NoError(t, err)
+	})
+
+	t.Run("all lines", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(ctx, ExecutorBin, []string{"journalctl", "--no-pager", "--output=short-iso"}, mock.Anything).
+			Return(nil)
+
+		err := newTestMachine(t, r).Logs(ctx, io.Discard, -1, false, "")
+		require.NoError(t, err)
+	})
+
+	t.Run("follow", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(ctx, ExecutorBin, []string{"journalctl", "--no-pager", "--output=short-iso", "-n", "50", "-f"}, mock.Anything).
+			Return(nil)
+
+		err := newTestMachine(t, r).Logs(ctx, io.Discard, 50, true, "")
+		require.NoError(t, err)
+	})
+
+	t.Run("unit filter", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(ctx, ExecutorBin, []string{"journalctl", "--no-pager", "--output=short-iso", "-n", "100", "-u", "podman.service"}, mock.Anything).
+			Return(nil)
+
+		err := newTestMachine(t, r).Logs(ctx, io.Discard, 100, false, "podman.service")
+		require.NoError(t, err)
+	})
+
+	t.Run("error", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(ctx, ExecutorBin, mock.Anything, mock.Anything).
+			Return(errors.New("journalctl failed"))
+
+		err := newTestMachine(t, r).Logs(ctx, io.Discard, 100, false, "")
+		require.ErrorContains(t, err, "logs:")
+	})
 }
 
 func TestApplyConfig(t *testing.T) {

@@ -15,7 +15,10 @@ import (
 	"altlinux.space/alt-atomic/selenite/internal/machine"
 )
 
-const imagePlaceholder = "<image>"
+const (
+	imagePlaceholder   = "<image>"
+	servicePlaceholder = "<service>"
+)
 
 var errImageRequired = errors.New("image required")
 
@@ -24,12 +27,38 @@ func machineCommands() *cli.Command {
 		Name:  "machine",
 		Usage: "Manage machine",
 		Commands: []*cli.Command{
+			logsCommand(),
 			infoCommand(),
 			rebootCommand(),
 			upgradeCommand(),
 			rollbackCommand(),
 			switchCommand(),
 			configCommand(),
+		},
+	}
+}
+
+func logsCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "logs",
+		Usage:     "Show system logs",
+		ArgsUsage: servicePlaceholder,
+		Before:    requirePermission("machine/logs", access.GetVerb),
+		Flags: []cli.Flag{
+			&cli.IntFlag{
+				Name:    "lines",
+				Aliases: []string{"n"},
+				Value:   100,
+				Usage:   "Number of lines to show (-1 for all)",
+			},
+			&cli.BoolFlag{
+				Name:    "follow",
+				Aliases: []string{"f"},
+				Usage:   "Follow log output",
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return machine.New().Logs(ctx, c.Writer, c.Int("lines"), c.Bool("follow"), c.Args().First())
 		},
 	}
 }

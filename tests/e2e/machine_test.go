@@ -74,6 +74,17 @@ sysctl:
 	// 	assert.Contains(t, out, "Disk:")
 	// })
 
+	run(t, "'machine logs' returns output", func(t *testing.T) {
+		out := mustRunCmd(t, client, "machine logs -n 10")
+		assert.NotEmpty(t, out)
+	})
+
+	run(t, "'machine logs' filters by service", func(t *testing.T) {
+		out := mustRunCmd(t, client, "machine logs -n 20 selenite-controller")
+		assert.NotEmpty(t, out)
+		assert.Contains(t, out, "selenite-controller")
+	})
+
 	run(t, "reboot works", func(t *testing.T) {
 		out := mustRunCmd(t, client, "machine reboot")
 		assert.Equal(t, "Rebooting...\n", out)

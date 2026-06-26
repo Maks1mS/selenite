@@ -12,7 +12,10 @@ import (
 	"altlinux.space/alt-atomic/selenite/internal/cmdutils"
 )
 
-const bootcPath = "/usr/bin/bootc"
+const (
+	bootcPath      = "/usr/bin/bootc"
+	journalctlPath = "/usr/bin/journalctl"
+)
 
 func main() {
 	runtime.LockOSThread()
@@ -58,6 +61,27 @@ func main() {
 		//gosec:disable G204,G702 -- Expected
 		if err := syscall.Exec(bootcPath, []string{"bootc", "switch", os.Args[2]}, env); err != nil {
 			cmdutils.Fatal("bootc-switch: %v\n", err)
+		}
+	case "journalctl":
+		args := []string{"journalctl"}
+		for i := 2; i < len(os.Args); i++ {
+			arg := os.Args[i]
+			switch arg {
+			case "--no-pager", "--output=short-iso", "-f", "--follow":
+				args = append(args, arg)
+			case "-n", "--lines", "-u", "--unit":
+				if i+1 >= len(os.Args) {
+					cmdutils.Fatal("journalctl: %s requires an argument\n", arg)
+				}
+				i++
+				args = append(args, arg, os.Args[i])
+			default:
+				cmdutils.Fatal("journalctl: unsupported argument: %s\n", arg)
+			}
+		}
+		//gosec:disable G204,G702 -- Expected
+		if err := syscall.Exec(journalctlPath, args, env); err != nil {
+			cmdutils.Fatal("journalctl: %v\n", err)
 		}
 	default:
 		cmdutils.Fatal("unknown command: %s\n", command)

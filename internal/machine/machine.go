@@ -203,6 +203,23 @@ func (m *machineManager) Switch(ctx context.Context, w io.Writer, image string) 
 	return nil
 }
 
+func (m *machineManager) Logs(ctx context.Context, w io.Writer, lines int, follow bool, unit string) error {
+	args := []string{"journalctl", "--no-pager", "--output=short-iso"}
+	if lines >= 0 {
+		args = append(args, "-n", strconv.Itoa(lines))
+	}
+	if follow {
+		args = append(args, "-f")
+	}
+	if unit != "" {
+		args = append(args, "-u", unit)
+	}
+	if err := m.run(ctx, w, args...); err != nil {
+		return fmt.Errorf("logs: %w", err)
+	}
+	return nil
+}
+
 func (m *machineManager) ApplyConfig(ctx context.Context, r io.Reader, w io.Writer) error {
 	buf, err := io.ReadAll(r)
 	if err != nil {
