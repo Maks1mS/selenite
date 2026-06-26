@@ -33,7 +33,7 @@ RUN mkdir /out && \
             -trimpath -o /out/$cmd ./cmd/$cmd; \
     done
 
-FROM altlinux.space/alt-atomic/core-minimal/stable:20260624@sha256:1c91abeea1e61f16b6976efc322561177b0ab422c11ba3921f5a10669fb9ec04
+FROM altlinux.space/alt-atomic/core-minimal/stable:20260626@sha256:0d62fed1cb96d0f88ea6e0400e9181e168c60f35aca0687e630aa8534b12f2ee
 
 ARG DEV
 ENV DEV=$DEV
