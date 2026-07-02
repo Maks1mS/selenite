@@ -42,10 +42,34 @@ type NetbirdConfig struct {
 	SetupKey string `yaml:"setup_key"`
 }
 
+type MonitoringAuth struct {
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
+type PrometheusConfig struct {
+	Enabled  bool           `yaml:"enabled"`
+	Endpoint string         `yaml:"endpoint"`
+	Auth     MonitoringAuth `yaml:"auth"`
+}
+
+type LokiConfig struct {
+	Enabled  bool           `yaml:"enabled"`
+	Endpoint string         `yaml:"endpoint"`
+	Auth     MonitoringAuth `yaml:"auth"`
+}
+
+type MonitoringConfig struct {
+	Enabled    bool             `yaml:"enabled"`
+	Prometheus PrometheusConfig `yaml:"prometheus"`
+	Loki       LokiConfig       `yaml:"loki"`
+}
+
 type MachineConfig struct {
-	Sysctl  SysctlConfig  `yaml:"sysctl"`
-	Access  AccessConfig  `yaml:"access"`
-	Netbird NetbirdConfig `yaml:"netbird"`
+	Sysctl     SysctlConfig     `yaml:"sysctl"`
+	Access     AccessConfig     `yaml:"access"`
+	Netbird    NetbirdConfig    `yaml:"netbird"`
+	Monitoring MonitoringConfig `yaml:"monitoring"`
 }
 
 func ParseMachineConfig(b []byte) (*MachineConfig, error) {

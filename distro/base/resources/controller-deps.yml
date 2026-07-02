@@ -4,8 +4,15 @@ modules:
     body:
       update: true
       install:
-        - busybox
-        - nftables
         - podman-compose
         - sysctl-conf-userns
+        - nftables
+        # for debug only
+        - nano
+        # for shell
+        # TODO: remove
+        - busybox
+        # netbird-helper
         - netbird
+        # alloy-helper
+        - alloy

@@ -1,0 +1,16 @@
+modules:
+  - name: verify is no collision with selenite users and groups
+    type: shell
+    body:
+      command: |
+        test "$(id -u _selenite-podman-executor)" = "852" && \
+        test "$(id -u _selenite-controller)"      = "851" && \
+        getent group _selenite-workloads | grep -q ':850:' && \
+        echo "selenite IDs OK" || { echo "ID COLLISION"; exit 1; }
+
+  - name: verify alloy is in systemd-journal group
+    type: shell
+    body:
+      command: |
+        getent group systemd-journal | grep -qE '(:|,)alloy(,|$)' && \
+        echo "alloy systemd-journal OK" || { echo "alloy not in systemd-journal $(cat /etc/group)"; exit 1; }

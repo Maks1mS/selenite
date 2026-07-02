@@ -6,11 +6,25 @@ modules:
       destination: /
       replace: true
 
+  - name: '[HACK] Restore passwd and group'
+    type: shell
+    body:
+      command: |
+        cat /etc/passwd /usr/lib/passwd |
+          sort -u -t: -k1,1 > /tmp/passwd_m &&
+          mv /tmp/passwd_m /etc/passwd &&
+          rm /usr/lib/passwd
+
+        cat /etc/group /usr/lib/group |
+          sort -u -t: -k1,1 > /tmp/group_m &&
+          mv /tmp/group_m /etc/group &&
+          rm /usr/lib/group
+
   - name: Create users and groups
     type: shell
     body:
       command: |
-        systemd-sysusers /usr/lib/sysusers.d/selenite.conf
+        systemd-sysusers
 
   - name: Enable rootless podman for _selenite-podman-executor
     type: shell
@@ -39,3 +53,9 @@ modules:
     body:
       targets:
         - better-cleanup.yml
+
+  - name: Post build checks
+    type: include
+    body:
+      targets:
+        - post-build-checks.yml

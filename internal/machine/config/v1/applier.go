@@ -21,6 +21,7 @@ import (
 const (
 	sysctlHelperBin  = "/usr/libexec/selenite-controller/sysctl-helper"
 	netbirdHelperBin = "/usr/libexec/selenite-controller/netbird-helper"
+	alloyHelperBin   = "/usr/libexec/selenite-controller/alloy-helper"
 )
 
 type ModuleApplier interface {
@@ -47,11 +48,16 @@ func NewApplier(cfg, prev *MachineConfig, r executil.Runner, s Store) *Applier {
 	if prev != nil {
 		prevNetbird = prev.Netbird
 	}
+	var prevMonitoring MonitoringConfig
+	if prev != nil {
+		prevMonitoring = prev.Monitoring
+	}
 	return &Applier{
 		modules: []ModuleApplier{
 			NewAccessApplier(cfg.Access),
 			NewSysctlApplier(cfg.Sysctl.Params, prevSysctl, r),
 			NewNetbirdApplier(cfg.Netbird, prevNetbird, r),
+			NewMonitoringApplier(cfg.Monitoring, prevMonitoring, r),
 		},
 		prev:  prev,
 		cfg:   cfg,
@@ -270,4 +276,76 @@ func (a *NetbirdApplier) Rollback(ctx context.Context) error {
 		return fmt.Errorf("netbird-helper restore: %w", err)
 	}
 	return nil
+}
+
+type MonitoringApplier struct {
+	newParams  MonitoringConfig
+	prevParams MonitoringConfig
+	r          executil.Runner
+}
+
+func NewMonitoringApplier(newParams, prevParams MonitoringConfig, r executil.Runner) *MonitoringApplier {
+	return &MonitoringApplier{newParams: newParams, prevParams: prevParams, r: r}
+}
+
+func (a *MonitoringApplier) Name() string {
+	return "monitoring"
+}
+
+func (a *MonitoringApplier) Validate(_ context.Context) error {
+	if !a.newParams.Enabled {
+		return nil
+	}
+	if a.newParams.Prometheus.Enabled && a.newParams.Prometheus.Endpoint == "" {
+		return errors.New("monitoring.prometheus.endpoint is required when prometheus is enabled")
+	}
+	if a.newParams.Loki.Enabled && a.newParams.Loki.Endpoint == "" {
+		return errors.New("monitoring.loki.endpoint is required when loki is enabled")
+	}
+	if !a.newParams.Prometheus.Enabled && !a.newParams.Loki.Enabled {
+		return errors.New("at least one of monitoring.prometheus or monitoring.loki must be enabled")
+	}
+	return nil
+}
+
+func (a *MonitoringApplier) Apply(ctx context.Context) error {
+	if reflect.DeepEqual(a.newParams, a.prevParams) {
+		return nil
+	}
+	return a.runHelper(ctx, a.newParams)
+}
+
+func (a *MonitoringApplier) Rollback(ctx context.Context) error {
+	return a.runHelper(ctx, a.prevParams)
+}
+
+func (a *MonitoringApplier) runHelper(ctx context.Context, p MonitoringConfig) error {
+	enabled := boolEnv(p.Enabled)
+	prometheusEnabled := boolEnv(p.Enabled && p.Prometheus.Enabled)
+	lokiEnabled := boolEnv(p.Enabled && p.Loki.Enabled)
+
+	if err := a.r.Run(
+		ctx,
+		alloyHelperBin,
+		[]string{"apply"},
+		executil.WithEnv("SELENITE_ALLOY_HELPER_ENABLED", enabled),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_ENABLED", prometheusEnabled),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_ENDPOINT", p.Prometheus.Endpoint),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_USERNAME", p.Prometheus.Auth.Username),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_PASSWORD", p.Prometheus.Auth.Password),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_ENABLED", lokiEnabled),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_ENDPOINT", p.Loki.Endpoint),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_USERNAME", p.Loki.Auth.Username),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_PASSWORD", p.Loki.Auth.Password),
+	); err != nil {
+		return fmt.Errorf("alloy-helper apply: %w", err)
+	}
+	return nil
+}
+
+func boolEnv(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
 }

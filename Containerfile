@@ -23,7 +23,8 @@ RUN mkdir /out && \
         podman-volume-helper \
         selenite-machine-helper \
         sysctl-helper \
-        netbird-helper; \
+        netbird-helper \
+        alloy-helper; \
     do \
         CGO_ENABLED=1 \
         GOOS=linux \
@@ -58,7 +59,8 @@ RUN --mount=from=selenite-controller,source=/out,target=/out \
         podman-volume-helper \
         selenite-machine-helper \
         sysctl-helper \
-        netbird-helper; \
+        netbird-helper \
+        alloy-helper; \
     do \
         install -o root -g _selenite-controller -m 4750 /out/$cmd /usr/libexec/selenite-controller/$cmd; \
     done
