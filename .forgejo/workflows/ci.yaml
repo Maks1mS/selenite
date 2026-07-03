@@ -10,7 +10,6 @@ env:
   IMAGE_NAME: alt-atomic/selenite/cloud
   REGISTRY: altlinux.space
   CACHE_IMAGE: altlinux.space/alt-atomic/selenite-cache
-  LOCAL_BUILD_NAME: localhost/selenite
 
 jobs:
   checks:
@@ -103,30 +102,34 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "git_commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Podman login
+      - name: Compute podman extra args
+        id: podman_args
         run: |
-          podman login --username="<token>" --password='${{ secrets.REGISTRY_TOKEN }}' $REGISTRY
+          ARGS="--cache-from $CACHE_IMAGE"
+          if [ "$FORGEJO_REF" = "refs/heads/main" ]; then
+            ARGS="$ARGS --cache-to $CACHE_IMAGE"
+          fi
+          echo "args=$ARGS" >> "$GITHUB_OUTPUT"
 
-      - name: Build image
-        run: |
-          podman build \
-            --tag "${LOCAL_BUILD_NAME}" \
-            --build-arg VERSION=${{ steps.version.outputs.version }} \
-            --build-arg GIT_COMMIT=${{ steps.version.outputs.git_commit }} \
-            --cache-from  "${CACHE_IMAGE}" \
-            $([ "$FORGEJO_REF" = "refs/heads/main" ] && echo "--cache-to ${CACHE_IMAGE}") \
-            .
-
-      - name: Push images
-        if: forgejo.ref == 'refs/heads/main'
-        uses: alt-atomic/actions/push-and-sign@6a9494b07dbc1c84c85efc2aca800f86135c0acb
+      - name: Build and push image
+        uses: alt-atomic/actions/build-and-push@a13e02ee187e574ca17179485beb1c188c955f42 # main
         with:
-          registry: ${{ env.REGISTRY }}
-          registry-username: "<token>"
-          registry-password: ${{ secrets.REGISTRY_TOKEN }}
-          image-name: ${{ env.IMAGE_NAME }}
+          image-name: alt-atomic/selenite/cloud
           image-tag: ${{ steps.version.outputs.version }}
-          local-build-name: ${{ env.LOCAL_BUILD_NAME }}
+          image-aliases: nightly
+
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            GIT_COMMIT=${{ steps.version.outputs.git_commit }}
+
+          podman-extra-args: ${{ steps.podman_args.outputs.args }}
+
+          pretty-name: Selenite
+          version: ${{ steps.version.outputs.version }}
+          source: ${{ forgejo.server_url }}/${{ forgejo.repository }}
+          rechunk-enabled: false
+
+          push-enabled: ${{ forgejo.ref == 'refs/heads/main' }}
+          registry-password: ${{ secrets.REGISTRY_TOKEN }}
           cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
           cosign-password: ${{ secrets.COSIGN_PASSWORD }}
-          image-aliases: nightly
