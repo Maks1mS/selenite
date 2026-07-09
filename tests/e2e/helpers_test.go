@@ -214,7 +214,7 @@ func mustRunCmdWithStdin(t *testing.T, client *testClient, cmd string, stdin io.
 	t.Helper()
 	var buf strings.Builder
 	err := sshRun(client.ssh, cmd, WithStdin(stdin), WithStdout(&buf))
-	require.NoError(t, err, "command %q\noutput: %s", cmd, buf)
+	require.NoError(t, err, "command %q\noutput: %s", cmd, buf.String())
 	return buf.String()
 }
 

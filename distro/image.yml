@@ -34,13 +34,11 @@ modules:
         control newgidmap public
         usermod --add-subuids 100000-165536 --add-subgids 100000-165536 _selenite-podman-executor
 
-  - name: System Services
-    type: systemd
+  - name: Apply systemd presets
+    type: shell
     body:
-      targets:
-        - selenite-controller.service
-        - selenite-setup.service
-      enabled: true
+      command: |
+        systemctl preset-all
 
   - name: Base cleanup
     type: include

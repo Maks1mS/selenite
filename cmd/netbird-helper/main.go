@@ -14,12 +14,17 @@ import (
 	cp "github.com/otiai10/copy"
 
 	"altlinux.space/alt-atomic/selenite/internal/cmdutils"
+	"altlinux.space/alt-atomic/selenite/internal/persist"
 )
 
 const (
 	netbirdBackupDir    = "/run/selenite-controller/netbird-backup"
 	netbirdVarLibBackup = netbirdBackupDir + "/var_lib_netbird"
 	netbirdEtcBackup    = netbirdBackupDir + "/etc_netbird"
+
+	netbirdVarLibDir = "/var/lib/netbird"
+	netbirdEtcDir    = "/etc/netbird"
+	netbirdMarker    = "netbird"
 )
 
 func main() {
@@ -41,6 +46,8 @@ func main() {
 		runBackup()
 	case "restore":
 		runRestore()
+	case "materialize":
+		runMaterialize()
 	default:
 		runApply()
 	}
@@ -58,51 +65,97 @@ func runBackup() {
 	_ = os.RemoveAll(netbirdVarLibBackup)
 	_ = os.RemoveAll(netbirdEtcBackup)
 
-	if err := copyDir("/var/lib/netbird", netbirdVarLibBackup); err != nil {
-		cmdutils.Fatal("backup /var/lib/netbird: %v", err)
+	if err := copyDir(netbirdVarLibDir, netbirdVarLibBackup); err != nil {
+		cmdutils.Fatal("backup %s: %v", netbirdVarLibDir, err)
 	}
-	if err := copyDir("/etc/netbird", netbirdEtcBackup); err != nil {
-		cmdutils.Fatal("backup /etc/netbird: %v", err)
+	if err := copyDir(netbirdEtcDir, netbirdEtcBackup); err != nil {
+		cmdutils.Fatal("backup %s: %v", netbirdEtcDir, err)
 	}
 }
 
 func runRestore() {
 	mustRun("/usr/bin/systemctl", "stop", "netbird")
 
-	_ = os.RemoveAll("/var/lib/netbird")
-	_ = os.RemoveAll("/etc/netbird")
+	_ = os.RemoveAll(netbirdVarLibDir)
+	_ = os.RemoveAll(netbirdEtcDir)
 
-	if err := copyDir(netbirdVarLibBackup, "/var/lib/netbird"); err != nil {
-		cmdutils.Fatal("restore /var/lib/netbird: %v", err)
+	if err := copyDir(netbirdVarLibBackup, netbirdVarLibDir); err != nil {
+		cmdutils.Fatal("restore %s: %v", netbirdVarLibDir, err)
 	}
-	if err := copyDir(netbirdEtcBackup, "/etc/netbird"); err != nil {
-		cmdutils.Fatal("restore /etc/netbird: %v", err)
+	if err := copyDir(netbirdEtcBackup, netbirdEtcDir); err != nil {
+		cmdutils.Fatal("restore %s: %v", netbirdEtcDir, err)
 	}
 
-	enabled := os.Getenv("SELENITE_NETBIRD_HELPER_ENABLED")
-	if enabled == "1" {
-		mustRun("/usr/bin/systemctl", "enable", "--now", "netbird")
-	} else {
-		mustRun("/usr/bin/systemctl", "disable", "--now", "netbird")
+	if !helperEnabled() {
+		setEnabled(false)
+		persistRemoveEtc()
+		return
 	}
+
+	setEnabled(true)
+	mustRun("/usr/bin/systemctl", "start", "netbird")
+	persistEtc()
 }
 
 func runApply() {
 	clearState := os.Getenv("SELENITE_NETBIRD_HELPER_CLEAR_STATE")
 	if clearState == "1" {
 		mustRun("/usr/bin/systemctl", "stop", "netbird")
-		_ = os.RemoveAll("/var/lib/netbird")
-		_ = os.RemoveAll("/etc/netbird")
+		_ = os.RemoveAll(netbirdVarLibDir)
+		_ = os.RemoveAll(netbirdEtcDir)
+		persistRemoveEtc()
 	}
 
-	enabled := os.Getenv("SELENITE_NETBIRD_HELPER_ENABLED")
-	if enabled == "1" {
-		mustRun("/usr/bin/systemctl", "enable", "--now", "netbird")
+	if !helperEnabled() {
+		setEnabled(false)
+		persistRemoveEtc()
+		return
+	}
 
-		setupKey := os.Getenv("SELENITE_NETBIRD_HELPER_SETUP_KEY")
-		mustRun("/usr/bin/netbird", "up", "--setup-key", setupKey, "--allow-server-ssh=false")
-	} else {
-		mustRun("/usr/bin/systemctl", "disable", "--now", "netbird")
+	setEnabled(true)
+	mustRun("/usr/bin/systemctl", "start", "netbird")
+
+	setupKey := os.Getenv("SELENITE_NETBIRD_HELPER_SETUP_KEY")
+	mustRun("/usr/bin/netbird", "up", "--setup-key", setupKey, "--allow-server-ssh=false")
+
+	persistEtc()
+}
+
+func runMaterialize() {
+	if !helperEnabled() {
+		setEnabled(false)
+		persistRemoveEtc()
+		return
+	}
+
+	setEnabled(true)
+	if _, err := os.Stat(netbirdEtcDir); err == nil {
+		persistEtc()
+	}
+}
+
+func helperEnabled() bool {
+	return os.Getenv("SELENITE_NETBIRD_HELPER_ENABLED") == "1"
+}
+
+func setEnabled(on bool) {
+	if err := persist.SetMarker(netbirdMarker, on); err != nil {
+		cmdutils.Fatal("netbird marker: %v", err)
+	}
+	if !on {
+		mustRun("/usr/bin/systemctl", "stop", "netbird")
+	}
+}
+
+func persistEtc() {
+	if err := persist.SaveTree(netbirdEtcDir); err != nil {
+		cmdutils.Fatal("persist %s: %v", netbirdEtcDir, err)
+	}
+}
+
+func persistRemoveEtc() {
+	if err := persist.Remove(netbirdEtcDir); err != nil {
+		cmdutils.Fatal("unpersist %s: %v", netbirdEtcDir, err)
 	}
 }
 

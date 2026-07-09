@@ -1,0 +1,8 @@
+enable selenite-controller.service
+enable selenite-setup.service
+enable selenite-etc-restore.service
+enable selenite-reconcile.service
+
+# сontrolled via /var/lib/selenite/markers/*
+enable alloy.service
+enable netbird.service

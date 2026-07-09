@@ -14,3 +14,19 @@ modules:
       command: |
         getent group systemd-journal | grep -qE '(:|,)alloy(,|$)' && \
         echo "alloy systemd-journal OK" || { echo "alloy not in systemd-journal $(cat /etc/group)"; exit 1; }
+
+  - name: verify transient /etc configuration survived the build
+    type: shell
+    body:
+      command: |
+        grep -A2 '^\[etc\]' /usr/lib/ostree/prepare-root.conf | grep -q 'transient *= *true' && \
+        echo "prepare-root etc.transient OK" || { echo "prepare-root.conf missing [etc] transient=true $(cat /usr/lib/ostree/prepare-root.conf)"; exit 1; }
+
+  - name: verify selenite units are enabled in the image
+    type: shell
+    body:
+      command: |
+        for u in selenite-controller selenite-setup selenite-etc-restore selenite-reconcile alloy netbird; do
+          test "$(systemctl is-enabled $u.service)" = "enabled" || { echo "$u not enabled"; exit 1; }
+        done
+        echo "presets applied OK"

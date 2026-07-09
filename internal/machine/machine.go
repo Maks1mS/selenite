@@ -183,6 +183,7 @@ func (m *machineManager) Reboot(ctx context.Context, w io.Writer) error {
 }
 
 func (m *machineManager) Upgrade(ctx context.Context, w io.Writer) error {
+	m.persistBeforeImageChange(ctx, w)
 	if err := m.run(ctx, w, "bootc-upgrade"); err != nil {
 		return fmt.Errorf("upgrade: %w", err)
 	}
@@ -197,10 +198,17 @@ func (m *machineManager) Rollback(ctx context.Context, w io.Writer) error {
 }
 
 func (m *machineManager) Switch(ctx context.Context, w io.Writer, image string) error {
+	m.persistBeforeImageChange(ctx, w)
 	if err := m.run(ctx, w, "bootc-switch", image); err != nil {
 		return fmt.Errorf("switch: %w", err)
 	}
 	return nil
+}
+
+func (m *machineManager) persistBeforeImageChange(ctx context.Context, w io.Writer) {
+	if err := m.Reconcile(ctx); err != nil {
+		_, _ = fmt.Fprintf(w, "warning: pre-switch state persist failed: %v\n", err)
+	}
 }
 
 func (m *machineManager) Logs(ctx context.Context, w io.Writer, lines int, follow bool, unit string) error {
@@ -239,6 +247,26 @@ func (m *machineManager) ApplyConfig(ctx context.Context, r io.Reader, w io.Writ
 	applier := config.NewApplier(cfg, prev, m.runner, m.store)
 	if err := applier.Apply(ctx); err != nil {
 		return fmt.Errorf("apply: %w", err)
+	}
+
+	return nil
+}
+
+// Reconcile re-materializes on-disk state from the stored machine config.
+func (m *machineManager) Reconcile(ctx context.Context) error {
+	cfg, err := m.store.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	// Nothing was ever applied on this machine -- nothing to converge to.
+	if len(cfg.Access.Users) == 0 {
+		return nil
+	}
+
+	applier := config.NewApplier(cfg, cfg, m.runner, m.store)
+	if err := applier.Materialize(ctx); err != nil {
+		return fmt.Errorf("materialize: %w", err)
 	}
 
 	return nil

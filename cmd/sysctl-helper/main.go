@@ -15,6 +15,7 @@ import (
 	"syscall"
 
 	"altlinux.space/alt-atomic/selenite/internal/cmdutils"
+	"altlinux.space/alt-atomic/selenite/internal/persist"
 )
 
 const (
@@ -51,6 +52,10 @@ func main() {
 		cmdutils.Fatal("write %s: %v\n", sysctlConf, err)
 	}
 
+	if err := persistConf(lines); err != nil {
+		cmdutils.Fatal("persist %s: %v\n", sysctlConf, err)
+	}
+
 	var stderrBuf bytes.Buffer
 	cmd := exec.Command(sysctlBin, "--system")
 	cmd.Stdout = os.Stdout
@@ -78,5 +83,18 @@ func writeConf(lines []string) error {
 		return fmt.Errorf("sysctlConf: %w", err)
 	}
 
+	return nil
+}
+
+func persistConf(lines []string) error {
+	if len(lines) == 0 {
+		if err := persist.Remove(sysctlConf); err != nil {
+			return fmt.Errorf("persist remove file: %w", err)
+		}
+		return nil
+	}
+	if err := persist.SaveFile(sysctlConf); err != nil {
+		return fmt.Errorf("persist save file: %w", err)
+	}
 	return nil
 }

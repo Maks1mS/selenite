@@ -29,6 +29,7 @@ type ModuleApplier interface {
 	Validate(ctx context.Context) error
 	Apply(ctx context.Context) error
 	Rollback(ctx context.Context) error
+	Materialize(ctx context.Context) error
 }
 
 // Applier orchestrates atomic apply across all modules.
@@ -94,6 +95,16 @@ func (a *Applier) Apply(ctx context.Context) error {
 	return nil
 }
 
+// Materialize converges on-disk state to the stored machine config at boot.
+func (a *Applier) Materialize(ctx context.Context) error {
+	for _, m := range a.modules {
+		if err := m.Materialize(ctx); err != nil {
+			return fmt.Errorf("%s materialize: %w", m.Name(), err)
+		}
+	}
+	return nil
+}
+
 type AccessApplier struct {
 	newParams AccessConfig
 }
@@ -150,6 +161,10 @@ func (a *AccessApplier) Rollback(ctx context.Context) error {
 	return nil
 }
 
+func (a *AccessApplier) Materialize(ctx context.Context) error {
+	return nil
+}
+
 // SysctlApplier applies sysctl parameters.
 type SysctlApplier struct {
 	newParams  map[string]string
@@ -181,6 +196,13 @@ func (a *SysctlApplier) Rollback(ctx context.Context) error {
 		return fmt.Errorf("sysctl rollback: %w", err)
 	}
 	return nil
+}
+
+func (a *SysctlApplier) Materialize(ctx context.Context) error {
+	// The values were already applied early via the restored
+	// /etc/sysctl.d file. But just in case, we apply it, and
+	// it shouldn't cause any problems
+	return a.Apply(ctx)
 }
 
 func (a *SysctlApplier) runSysctlHelper(ctx context.Context, params map[string]string) error {
@@ -257,6 +279,22 @@ func (a *NetbirdApplier) Apply(ctx context.Context) error {
 	return nil
 }
 
+func (a *NetbirdApplier) Materialize(ctx context.Context) error {
+	enabled := "0"
+	if a.newParams.Enabled {
+		enabled = "1"
+	}
+	if err := a.r.Run(
+		ctx,
+		netbirdHelperBin,
+		[]string{"materialize"},
+		executil.WithEnv("SELENITE_NETBIRD_HELPER_ENABLED", enabled),
+	); err != nil {
+		return fmt.Errorf("netbird-helper materialize: %w", err)
+	}
+	return nil
+}
+
 func (a *NetbirdApplier) Rollback(ctx context.Context) error {
 	if !a.backupDone {
 		return nil
@@ -319,15 +357,24 @@ func (a *MonitoringApplier) Rollback(ctx context.Context) error {
 	return a.runHelper(ctx, a.prevParams)
 }
 
-func (a *MonitoringApplier) runHelper(ctx context.Context, p MonitoringConfig) error {
+func (a *MonitoringApplier) Materialize(ctx context.Context) error {
+	return a.runHelper(ctx, a.newParams, "materialize")
+}
+
+func (a *MonitoringApplier) runHelper(ctx context.Context, p MonitoringConfig, mode ...string) error {
 	enabled := boolEnv(p.Enabled)
 	prometheusEnabled := boolEnv(p.Enabled && p.Prometheus.Enabled)
 	lokiEnabled := boolEnv(p.Enabled && p.Loki.Enabled)
 
+	args := []string{"apply"}
+	if len(mode) > 0 {
+		args = mode
+	}
+
 	if err := a.r.Run(
 		ctx,
 		alloyHelperBin,
-		[]string{"apply"},
+		args,
 		executil.WithEnv("SELENITE_ALLOY_HELPER_ENABLED", enabled),
 		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_ENABLED", prometheusEnabled),
 		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_ENDPOINT", p.Prometheus.Endpoint),

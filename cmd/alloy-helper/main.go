@@ -14,9 +14,13 @@ import (
 	"text/template"
 
 	"altlinux.space/alt-atomic/selenite/internal/cmdutils"
+	"altlinux.space/alt-atomic/selenite/internal/persist"
 )
 
-const alloyConfigPath = "/etc/alloy/config.alloy"
+const (
+	alloyConfigPath = "/etc/alloy/config.alloy"
+	alloyMarker     = "alloy"
+)
 
 var alloyConfigTmpl = template.Must(template.New("alloy").Parse(`
 {{- if .Prometheus.Enabled }}
@@ -137,15 +141,23 @@ func main() {
 
 	switch mode {
 	case "apply":
-		runApply()
+		runApply(false)
+	case "materialize":
+		runApply(true)
 	default:
 		cmdutils.Fatal("unknown mode: %s\n", mode)
 	}
 }
 
-func runApply() {
+func runApply(materialize bool) {
 	if os.Getenv("SELENITE_ALLOY_HELPER_ENABLED") != "1" {
-		mustRun("/usr/bin/systemctl", "disable", "--now", "alloy")
+		if err := persist.SetMarker(alloyMarker, false); err != nil {
+			cmdutils.Fatal("remove alloy marker: %v", err)
+		}
+		if err := persist.Remove(alloyConfigPath); err != nil {
+			cmdutils.Fatal("unpersist alloy config: %v", err)
+		}
+		mustRun("/usr/bin/systemctl", "stop", "alloy")
 		return
 	}
 
@@ -180,7 +192,18 @@ func runApply() {
 		cmdutils.Fatal("write alloy config: %v", err)
 	}
 
-	mustRun("/usr/bin/systemctl", "enable", "--now", "alloy")
+	if err := persist.SaveFile(alloyConfigPath); err != nil {
+		cmdutils.Fatal("persist alloy config: %v", err)
+	}
+	if err := persist.SetMarker(alloyMarker, true); err != nil {
+		cmdutils.Fatal("create alloy marker: %v", err)
+	}
+
+	if materialize {
+		return
+	}
+
+	mustRun("/usr/bin/systemctl", "start", "alloy")
 }
 
 func mustRun(name string, args ...string) {

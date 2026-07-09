@@ -1,0 +1,8 @@
+#!/bin/bash
+set -eu
+
+PERSIST=/var/lib/selenite/etc-persist
+
+[ -d "$PERSIST" ] || exit 0
+
+cp -a "$PERSIST/." /etc/

@@ -34,6 +34,8 @@ check_not_failed() {
 check_active selenite-controller.service
 # selenite-setup runs only on first boot, so we only verify it hasn't failed
 check_not_failed selenite-setup.service
+check_not_failed selenite-etc-restore.service
+check_not_failed selenite-reconcile.service
 
 if [ "$FAILED" -ne 0 ]; then
     exit 1

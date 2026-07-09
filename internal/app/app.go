@@ -11,6 +11,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"altlinux.space/alt-atomic/selenite/internal/machine"
 	"altlinux.space/alt-atomic/selenite/internal/serve"
 )
 
@@ -35,6 +36,13 @@ func Run(ctx context.Context) error {
 						Host: c.String("host"),
 						Port: c.Int("port"),
 					})
+				},
+			},
+			{
+				Name:  "reconcile",
+				Usage: "converge on-disk state to the stored machine config",
+				Action: func(ctx context.Context, _ *cli.Command) error {
+					return machine.New().Reconcile(ctx)
 				},
 			},
 		},

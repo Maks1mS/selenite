@@ -1,0 +1,17 @@
+[Unit]
+Description=Selenite: restore persistent /etc entries into transient /etc
+DefaultDependencies=no
+Conflicts=shutdown.target
+ConditionPathIsDirectory=/var/lib/selenite/etc-persist
+RequiresMountsFor=/var /etc
+After=systemd-remount-fs.service
+Before=sysinit.target shutdown.target
+Before=systemd-sysctl.service systemd-tmpfiles-setup.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/selenite-etc-restore
+
+[Install]
+WantedBy=sysinit.target

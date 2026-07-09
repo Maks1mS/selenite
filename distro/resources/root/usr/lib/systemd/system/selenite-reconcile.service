@@ -1,0 +1,15 @@
+[Unit]
+Description=Selenite: reconcile machine config on boot
+After=basic.target selenite-etc-restore.service
+Before=selenite-controller.service
+ConditionPathExists=/var/lib/selenite-controller/machine.yml
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=_selenite-controller
+WorkingDirectory=/var/lib/selenite-controller
+ExecStart=/usr/bin/selenite-controller reconcile
+
+[Install]
+WantedBy=multi-user.target
