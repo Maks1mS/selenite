@@ -20,6 +20,7 @@ func infraCommand() *cli.Command {
 		Commands: []*cli.Command{
 			secretCommand(),
 			volumeCommand(),
+			networkCommand(),
 		},
 	}
 }

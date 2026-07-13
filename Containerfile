@@ -21,6 +21,7 @@ RUN mkdir /out && \
         podman-compose-helper \
         podman-secret-helper \
         podman-volume-helper \
+        podman-network-helper \
         selenite-machine-helper \
         sysctl-helper \
         netbird-helper \
@@ -57,6 +58,7 @@ RUN --mount=from=selenite-controller,source=/out,target=/out \
         podman-compose-helper \
         podman-secret-helper \
         podman-volume-helper \
+        podman-network-helper \
         selenite-machine-helper \
         sysctl-helper \
         netbird-helper \
