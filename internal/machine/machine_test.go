@@ -31,6 +31,60 @@ func newTestMachine(t *testing.T, runner *mocks.MockRunner) *machineManager {
 	}
 }
 
+func TestDmesg(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("default", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(ctx, ExecutorBin, []string{"dmesg"}, mock.Anything).
+			Return(nil)
+
+		err := newTestMachine(t, r).Dmesg(ctx, io.Discard, false, "", false)
+		require.NoError(t, err)
+	})
+
+	t.Run("ctime", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(ctx, ExecutorBin, []string{"dmesg", "--ctime"}, mock.Anything).
+			Return(nil)
+
+		err := newTestMachine(t, r).Dmesg(ctx, io.Discard, true, "", false)
+		require.NoError(t, err)
+	})
+
+	t.Run("level", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(ctx, ExecutorBin, []string{"dmesg", "--level", "err,warn"}, mock.Anything).
+			Return(nil)
+
+		err := newTestMachine(t, r).Dmesg(ctx, io.Discard, false, "err,warn", false)
+		require.NoError(t, err)
+	})
+
+	t.Run("follow", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(ctx, ExecutorBin, []string{"dmesg", "--follow"}, mock.Anything).
+			Return(nil)
+
+		err := newTestMachine(t, r).Dmesg(ctx, io.Discard, false, "", true)
+		require.NoError(t, err)
+	})
+
+	t.Run("error", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(ctx, ExecutorBin, mock.Anything, mock.Anything).
+			Return(errors.New("dmesg failed"))
+
+		err := newTestMachine(t, r).Dmesg(ctx, io.Discard, false, "", false)
+		require.ErrorContains(t, err, "dmesg:")
+	})
+}
+
 func TestLogs(t *testing.T) {
 	ctx := context.Background()
 

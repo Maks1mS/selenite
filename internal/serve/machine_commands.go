@@ -28,12 +28,41 @@ func machineCommands() *cli.Command {
 		Usage: "Manage machine",
 		Commands: []*cli.Command{
 			logsCommand(),
+			dmesgCommand(),
 			infoCommand(),
 			rebootCommand(),
 			upgradeCommand(),
 			rollbackCommand(),
 			switchCommand(),
 			configCommand(),
+		},
+	}
+}
+
+func dmesgCommand() *cli.Command {
+	return &cli.Command{
+		Name:   "dmesg",
+		Usage:  "Show kernel ring buffer messages",
+		Before: requirePermission("machine/dmesg", access.GetVerb),
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "ctime",
+				Aliases: []string{"T"},
+				Usage:   "Print human readable timestamps",
+			},
+			&cli.StringFlag{
+				Name:    "level",
+				Aliases: []string{"l"},
+				Usage:   "Restrict output to given levels (e.g. err,warn)",
+			},
+			&cli.BoolFlag{
+				Name:    "follow",
+				Aliases: []string{"w"},
+				Usage:   "Wait for new messages",
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return machine.New().Dmesg(ctx, c.Writer, c.Bool("ctime"), c.String("level"), c.Bool("follow"))
 		},
 	}
 }

@@ -85,6 +85,16 @@ sysctl:
 		assert.Contains(t, out, "selenite-controller")
 	})
 
+	run(t, "'machine dmesg' returns output", func(t *testing.T) {
+		out := mustRunCmd(t, client, "machine dmesg")
+		assert.NotEmpty(t, out)
+	})
+
+	run(t, "'machine dmesg' with flags returns output", func(t *testing.T) {
+		out := mustRunCmd(t, client, "machine dmesg --level info")
+		assert.NotEmpty(t, out)
+	})
+
 	run(t, "reboot works", func(t *testing.T) {
 		out := mustRunCmd(t, client, "machine reboot")
 		assert.Equal(t, "Rebooting...\n", out)

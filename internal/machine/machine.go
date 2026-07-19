@@ -203,6 +203,23 @@ func (m *machineManager) Switch(ctx context.Context, w io.Writer, image string) 
 	return nil
 }
 
+func (m *machineManager) Dmesg(ctx context.Context, w io.Writer, ctime bool, level string, follow bool) error {
+	args := []string{"dmesg"}
+	if ctime {
+		args = append(args, "--ctime")
+	}
+	if level != "" {
+		args = append(args, "--level", level)
+	}
+	if follow {
+		args = append(args, "--follow")
+	}
+	if err := m.run(ctx, w, args...); err != nil {
+		return fmt.Errorf("dmesg: %w", err)
+	}
+	return nil
+}
+
 func (m *machineManager) Logs(ctx context.Context, w io.Writer, lines int, follow bool, unit string) error {
 	args := []string{"journalctl", "--no-pager", "--output=short-iso"}
 	if lines >= 0 {
