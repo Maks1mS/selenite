@@ -12,5 +12,12 @@ modules:
     type: shell
     body:
       command: |
-        getent group systemd-journal | grep -qE '(:|,)alloy(,|$)' && \
+        getent group systemd-journal | grep -q 'alloy' && \
         echo "alloy systemd-journal OK" || { echo "alloy not in systemd-journal $(cat /etc/group)"; exit 1; }
+
+  - name: verify _selenite-podman-executor is in systemd-journal group
+    type: shell
+    body:
+      command: |
+        getent group systemd-journal | grep -q '_selenite-podman-executor' && \
+        echo "_selenite-podman-executor systemd-journal OK" || { echo "_selenite-podman-executor not in systemd-journal $(cat /etc/group)"; exit 1; }

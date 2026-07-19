@@ -17,7 +17,7 @@ import (
 
 const PodmanExecutorUser = "_selenite-podman-executor"
 
-// ToUser locks the current OS thread and drops privileges to the named user.
+// ToUser drops privileges to the named user.
 func ToUser(username string) (*user.User, error) {
 	runtime.LockOSThread()
 
@@ -28,6 +28,22 @@ func ToUser(username string) (*user.User, error) {
 	uid, _ := strconv.Atoi(u.Uid)
 	gid, _ := strconv.Atoi(u.Gid)
 
+	gidStrs, err := u.GroupIds()
+	if err != nil {
+		return nil, fmt.Errorf("resolve groups: %w", err)
+	}
+	gids := make([]int, 0, len(gidStrs))
+	for _, gs := range gidStrs {
+		g, err := strconv.Atoi(gs)
+		if err != nil {
+			return nil, fmt.Errorf("parse gid %q: %w", gs, err)
+		}
+		gids = append(gids, g)
+	}
+
+	if err := syscall.Setgroups(gids); err != nil {
+		return nil, fmt.Errorf("setgroups: %w", err)
+	}
 	if err := syscall.Setresgid(gid, gid, gid); err != nil {
 		return nil, fmt.Errorf("setresgid: %w", err)
 	}

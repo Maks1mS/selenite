@@ -11,6 +11,7 @@ import (
 	"embed"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +20,7 @@ import (
 const testComposeYAML = `services:
   test:
     image: docker.io/library/busybox:latest
-    command: sleep 3600
+    command: sh -c 'echo start-log-test && while true; do date; sleep 1; done'
     restart: unless-stopped
     secrets:
       - test_secret
@@ -66,6 +67,13 @@ func TestStack(t *testing.T) {
 		mustDeployStack(t, client, stackName, testComposeYAML)
 		out := mustRunCmd(t, client, "stack list")
 		require.Contains(t, out, stackName)
+	})
+
+	run(t, "stack logs returns output", func(t *testing.T) {
+		// Give the container a moment to emit the startup log line.
+		time.Sleep(2 * time.Second)
+		out := mustRunCmd(t, client, "stack logs "+stackName)
+		assert.Contains(t, out, "start-log-test")
 	})
 
 	run(t, "import volume", func(t *testing.T) {
