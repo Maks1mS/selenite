@@ -33,9 +33,20 @@ tasks:
     cmds:
       - go test -v ./...
 
-  test-integration:
+  test-unit-coverage:
+    desc: "Run unit tests with coverage"
     cmds:
-      - go test -tags=integration -v ./tests/integration/
+      - go test -v -coverpkg=./... -coverprofile=unit-coverage.out ./...
+
+  test-integration:
+    desc: "Run integration tests"
+    cmds:
+      - go test -v -tags=integration ./tests/integration/
+
+  test-integration-coverage:
+    desc: "Run integration tests with coverage"
+    cmds:
+      - go test -v -tags=integration -coverpkg=./... -coverprofile=integration-coverage.out ./tests/integration/
 
   test-e2e:
     desc: "Run e2e tests"
