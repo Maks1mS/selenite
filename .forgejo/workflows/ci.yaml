@@ -99,7 +99,7 @@ jobs:
 
   sonarqube:
     name: SonarQube Scan
-    runs-on: als-huge
+    runs-on: als-huge-gh
     needs: [test-unit, test-integration]
     if: github.event_name != 'pull_request'
     steps:
