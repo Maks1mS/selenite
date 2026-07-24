@@ -67,11 +67,13 @@ jobs:
       - name: Run tests
         run: task test-unit-coverage
 
-      - name: Upload unit coverage
-        uses: actions/upload-artifact@65c4c20a3d5d3244d461c34892550c0205ba9c2e # v4.6.0
+      - &upload-unit-coverage
+        name: Upload unit coverage
+        uses: actions/upload-artifact@c6a3b2bd78b3985e4b2f15397fec357f0fd808de # v3.2.2-node20
         with:
           name: unit-coverage
           path: unit-coverage.out
+          retention-days: 1
 
   test-integration:
     name: integration tests
@@ -88,8 +90,8 @@ jobs:
       - name: Run tests
         run: task test-integration-coverage
 
-      - name: Upload integration coverage
-        uses: actions/upload-artifact@c6a3b2bd78b3985e4b2f15397fec357f0fd808de # v3.2.2-node20
+      - <<: *upload-unit-coverage
+        name: Upload integration coverage
         with:
           name: integration-coverage
           path: integration-coverage.out
@@ -107,7 +109,7 @@ jobs:
 
       - &download-unit-coverage
         name: Download unit coverage
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v3.1.0-node20
+        uses: actions/download-artifact@ad191675b41f6a5b46da9a048cb6893812da158b # v3.1.0-node20
         with:
           name: unit-coverage
 
