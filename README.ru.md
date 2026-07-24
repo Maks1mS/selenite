@@ -8,6 +8,8 @@
   <br>Построена на базе <a href="http://atomic.alt-gnome.ru">ALT Atomic</a>.
 </p>
 
+[![Quality Gate Status](https://sonar.alt-gnome.ru/api/project_badges/measure?project=selenite&metric=alert_status&token=sqb_425aa0aae9e5551e87bc53bf1881858654f327ca)](https://sonar.alt-gnome.ru/dashboard?id=selenite)
+
 ## О проекте
 
 Selenite — иммутабельная серверная операционная система, предназначенная для запуска контейнерных нагрузок. Базовая система доступна только для чтения и обновляется атомарно целым образом, а приложения разворачиваются через стандартные стеки Podman Compose.

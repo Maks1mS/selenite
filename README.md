@@ -8,6 +8,8 @@
   <br>Built on <a href="http://atomic.alt-gnome.ru">ALT Atomic</a>.
 </p>
 
+[![Quality Gate Status](https://sonar.alt-gnome.ru/api/project_badges/measure?project=selenite&metric=alert_status&token=sqb_425aa0aae9e5551e87bc53bf1881858654f327ca)](https://sonar.alt-gnome.ru/dashboard?id=selenite)
+
 ## About
 
 Selenite is an immutable server operating system designed for running container workloads. It keeps the base system read-only and updates it atomically as a whole image, while applications are deployed via standard Podman Compose stacks.
