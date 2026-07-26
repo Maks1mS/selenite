@@ -26,6 +26,7 @@ Common `task` commands used in the project:
 | `task test-unit` | Run unit tests |
 | `task test-integration` | Run integration tests |
 | `task test-e2e` | Run e2e tests |
+| `task mocks` | Regenerate testify mocks with mockery |
 | `task license-headers-fix` | Add MPL-2.0 license headers |
 | `task license-check` | Check dependency licenses |
 

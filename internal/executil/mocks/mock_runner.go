@@ -71,9 +71,9 @@ type MockRunner_Run_Call struct {
 //   - name string
 //   - args []string
 //   - opts ...executil.Option
-func (_e *MockRunner_Expecter) Run(ctx interface{}, name interface{}, args interface{}, opts ...interface{}) *MockRunner_Run_Call {
+func (_e *MockRunner_Expecter) Run(ctx any, name any, args any, opts ...any) *MockRunner_Run_Call {
 	return &MockRunner_Run_Call{Call: _e.mock.On("Run",
-		append([]interface{}{ctx, name, args}, opts...)...)}
+		append([]any{ctx, name, args}, opts...)...)}
 }
 
 func (_c *MockRunner_Run_Call) Run(run func(ctx context.Context, name string, args []string, opts ...executil.Option)) *MockRunner_Run_Call {

@@ -31,6 +31,7 @@ The project is written in Go. The main component is `selenite-controller`, a dae
 - `task test-unit` — Run all unit tests
 - `task test-integration` — Run integration tests
 - `task test-e2e` — Run E2E tests (slow; avoid in tight loops)
+- `task mocks` — Regenerate testify mocks with mockery after interface changes
 - `task license-headers-fix` — Add MPL-2.0 license headers to source files
 - `task license-check` — Check dependency licenses are compatible with MPL-2.0
 
@@ -51,6 +52,12 @@ The project is written in Go. The main component is `selenite-controller`, a dae
 - The project uses `golangci-lint` with many enabled linters.
 - Run `task lint` to check for linting issues.
 - Use `task fmt` to auto-fix issues where possible.
+
+## Mocks
+
+- Prefer mockery-generated mocks over hand-written stubs.
+- Run `task mocks` (mockery v3) after changing any mocked interface.
+- Never edit generated files under `**/mocks/` manually; the source of truth is `.mockery.yml`.
 
 ## Language
 

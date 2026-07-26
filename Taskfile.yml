@@ -8,6 +8,7 @@ vars:
   ADDLICENSE_BIN: go run github.com/google/addlicense@b289835c0741ba2fb92dd5f61af070e79c69a55e # v1.2.0
   ALLOWED_LICENSES: MIT,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,MPL-2.0,MPL-2.0-no-copyleft-exception
   ADDLICENSE_IGNORE: "-ignore=vendor/** -ignore=.git/** -ignore=**/*.yml -ignore=**/*.yaml"
+  MOCKERY_BIN: go run github.com/vektra/mockery/v3@061811d8857c652c7241910d3ba4e8a01dda55ff # v3.7.0
 
 includes:
   dev:
@@ -73,6 +74,11 @@ tasks:
         msg: "go.mod not found"
     cmds:
       - "{{.GO_LICENSES_BIN}} check ./... --allowed_licenses={{.ALLOWED_LICENSES}}"
+
+  mocks:
+    desc: "Generate testify mocks from interfaces using mockery"
+    cmds:
+      - "{{.MOCKERY_BIN}} --config .mockery.yml"
 
   license-report:
     desc: "Generate third-party license report"

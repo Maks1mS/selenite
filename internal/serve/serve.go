@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"time"
 
 	"charm.land/log/v2"
 	"charm.land/wish/v2"
@@ -19,6 +20,7 @@ import (
 
 	"altlinux.space/alt-atomic/selenite/internal/access"
 	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
+	"altlinux.space/alt-atomic/selenite/internal/serve/authguard"
 )
 
 type ServeOptions struct {
@@ -27,9 +29,17 @@ type ServeOptions struct {
 	HostKeyPath string // default: "./.selenite/keys/id_ed25519"
 }
 
-// publicKeyAuth returns true if key matches any configured user, or if no users
+func extractIP(addr net.Addr) string {
+	host, _, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		return addr.String()
+	}
+	return host
+}
+
+// publicKeyAuthInner returns true if key matches any configured user, or if no users
 // are configured (provision mode).
-func publicKeyAuth(_ ssh.Context, key ssh.PublicKey) bool {
+func publicKeyAuthInner(_ ssh.Context, key ssh.PublicKey) bool {
 	cfg, err := v1.ConfigStore{}.Load()
 	if err != nil || len(cfg.Access.Users) == 0 {
 		return true // provision mode: accept any key
@@ -43,6 +53,41 @@ func publicKeyAuth(_ ssh.Context, key ssh.PublicKey) bool {
 		}
 	}
 	return false
+}
+
+// publicKeyAuth returns a handler that checks authguard before delegating to
+// publicKeyAuthInner. Failed attempts are recorded and may lead to a ban.
+func publicKeyAuth(guard *authguard.Guard) ssh.PublicKeyHandler {
+	return publicKeyAuthWithInner(guard, publicKeyAuthInner)
+}
+
+func publicKeyAuthWithInner(guard *authguard.Guard, inner ssh.PublicKeyHandler) ssh.PublicKeyHandler {
+	return func(ctx ssh.Context, key ssh.PublicKey) bool {
+		ip := extractIP(ctx.RemoteAddr())
+		if !guard.Allow(ip) {
+			return false
+		}
+		ok := inner(ctx, key)
+		if !ok {
+			if guard.RecordFailure(ip) {
+				log.Info("authguard banned IP after repeated failures", "ip", ip)
+			}
+		}
+		return ok
+	}
+}
+
+// banConnCallback rejects TCP connections from banned IPs before the SSH handshake.
+func banConnCallback(guard *authguard.Guard) ssh.ConnCallback {
+	return func(_ ssh.Context, conn net.Conn) net.Conn {
+		ip := extractIP(conn.RemoteAddr())
+		if !guard.Allow(ip) {
+			log.Info("authguard rejecting banned IP", "ip", ip)
+			_ = conn.Close()
+			return nil
+		}
+		return conn
+	}
 }
 
 // findUserByKey returns the first user whose authorized keys include key, or nil.
@@ -123,16 +168,30 @@ func Serve(ctx context.Context, options ServeOptions) error {
 		hostKeyPath = "./.selenite/keys/id_ed25519"
 	}
 
+	cfg, err := v1.ConfigStore{}.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	guard, err := authguard.NewGuard(cfg.Access.AuthGuard)
+	if err != nil {
+		return fmt.Errorf("failed to init authguard: %w", err)
+	}
+
 	s, err := wish.NewServer(
 		ssh.AllocatePty(),
 		wish.WithAddress(net.JoinHostPort(options.Host, strconv.Itoa(options.Port))),
 		wish.WithHostKeyPath(hostKeyPath),
-		wish.WithPublicKeyAuth(publicKeyAuth),
+		wish.WithPublicKeyAuth(publicKeyAuth(guard)),
 		wish.WithMiddleware(
 			cmdMiddleware,
 			authMiddleware,
 			logging.Middleware(),
 		),
+		func(srv *ssh.Server) error {
+			srv.ConnCallback = banConnCallback(guard)
+			return nil
+		},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %w", err)
@@ -140,6 +199,8 @@ func Serve(ctx context.Context, options ServeOptions) error {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	go guard.CleanupLoop(ctx, 5*time.Minute)
 
 	log.Info("Starting SSH server", "host", options.Host, "port", options.Port)
 	go func() {
@@ -152,5 +213,8 @@ func Serve(ctx context.Context, options ServeOptions) error {
 	<-ctx.Done()
 	log.Info("Stopping SSH server")
 
+	if err := guard.Save(); err != nil {
+		log.Warn("failed to save authguard state", "err", err)
+	}
 	return nil
 }

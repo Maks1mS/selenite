@@ -26,6 +26,7 @@
 | `task test-unit` | Модульные тесты |
 | `task test-integration` | Интеграционные тесты |
 | `task test-e2e` | E2E тесты |
+| `task mocks` | Перегенерировать моки testify через mockery |
 | `task license-headers-fix` | Добавить заголовки лицензии MPL-2.0 |
 | `task license-check` | Проверить лицензии зависимостей |
 

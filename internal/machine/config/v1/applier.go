@@ -110,7 +110,30 @@ func (a *AccessApplier) Validate(_ context.Context) error {
 	if len(a.newParams.Users) == 0 {
 		return errors.New("users can't be empty")
 	}
+	if err := a.validateAuthGuard(); err != nil {
+		return err
+	}
 	return a.validateRoot()
+}
+
+func (a *AccessApplier) validateAuthGuard() error {
+	g := a.newParams.AuthGuard
+	if !g.Enabled {
+		return nil
+	}
+	if g.MaxRetries < 1 {
+		return errors.New("auth_guard.max_retries must be at least 1")
+	}
+	if g.Window <= 0 {
+		return errors.New("auth_guard.window must be positive")
+	}
+	if g.BanDuration <= 0 {
+		return errors.New("auth_guard.ban_duration must be positive")
+	}
+	if g.MaxTrackedIPs < 1 {
+		return errors.New("auth_guard.max_tracked_ips must be at least 1")
+	}
+	return nil
 }
 
 func (a *AccessApplier) validateRoot() error {

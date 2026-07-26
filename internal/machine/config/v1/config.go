@@ -6,6 +6,7 @@ package v1
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/goccy/go-yaml"
 )
@@ -26,9 +27,18 @@ type Role struct {
 	Rules []Rules `yaml:"rules"`
 }
 
+type AuthGuardConfig struct {
+	Enabled       bool          `yaml:"enabled"`
+	MaxRetries    int           `yaml:"max_retries"`
+	Window        time.Duration `yaml:"window"`
+	BanDuration   time.Duration `yaml:"ban_duration"`
+	MaxTrackedIPs int           `yaml:"max_tracked_ips"`
+}
+
 type AccessConfig struct {
-	Users []User `yaml:"users"`
-	Roles []Role `yaml:"roles"`
+	Users     []User          `yaml:"users"`
+	Roles     []Role          `yaml:"roles"`
+	AuthGuard AuthGuardConfig `yaml:"auth_guard"`
 }
 
 // SysctlConfig holds kernel parameters to apply via sysctl.
