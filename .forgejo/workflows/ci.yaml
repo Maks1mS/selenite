@@ -154,7 +154,7 @@ jobs:
           echo "args=$ARGS" >> "$GITHUB_OUTPUT"
 
       - name: Build and push image
-        uses: alt-atomic/actions/build-and-push@5ec6123f09437d47c79afae5300065c7d9ebb267 # feat/sbom-attestation
+        uses: alt-atomic/actions/build-and-push@4848d4862b7e2cffcf23980b38c6467b36cea6fb # feat/sbom-attestation
         with:
           image-name: alt-atomic/selenite/cloud
           image-tag: ${{ steps.version.outputs.version }}
