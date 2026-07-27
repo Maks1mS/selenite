@@ -67,10 +67,10 @@ RUN --mount=from=selenite-controller,source=/out,target=/out \
         install -o root -g _selenite-controller -m 4750 /out/$cmd /usr/libexec/selenite-controller/$cmd; \
     done
 
-FROM altlinux.space/alt-atomic/sbom-tool:v0.1.0@sha256:00da0ade73a1ffcc8d6f2452251b147e93fe122e7810d1e90194d0b62a84ef4a AS sbom
+FROM altlinux.space/alt-atomic/sbom-tool:v0.2.0@sha256:7403d01ad02d80c2948944bf30e921d815e7b0843071e76b440eb707c09cbf5d AS sbom
 RUN --mount=type=bind,from=root,source=/,target=/rootfs,rw generate-sbom
 
 FROM root AS final
-COPY --from=sbom /sbom.spdx.json /usr/share/doc/selenite-sbom.spdx.json
+COPY --from=sbom /sbom.cdx.json /usr/share/doc/atomic-sbom.cdx.json
 WORKDIR /
 CMD ["/sbin/init"]
