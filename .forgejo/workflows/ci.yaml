@@ -160,6 +160,8 @@ jobs:
           image-tag: ${{ steps.version.outputs.version }}
           image-aliases: nightly
 
+          packages-info-enabled: false
+
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
             GIT_COMMIT=${{ steps.version.outputs.git_commit }}
