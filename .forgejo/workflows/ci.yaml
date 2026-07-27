@@ -154,7 +154,7 @@ jobs:
           echo "args=$ARGS" >> "$GITHUB_OUTPUT"
 
       - name: Build and push image
-        uses: alt-atomic/actions/build-and-push@6bf2462132a219c679b8a05aeb3d09fb40a880c2 # feat/add-chunkah
+        uses: alt-atomic/actions/build-and-push@e3fd9f49cd0af76681ebb208db4ddf8c7841755d # feat/sbom-attestation
         with:
           image-name: alt-atomic/selenite/cloud
           image-tag: ${{ steps.version.outputs.version }}
@@ -171,6 +171,7 @@ jobs:
           source: ${{ forgejo.server_url }}/${{ forgejo.repository }}
           rechunk-enabled: true
           experimental-use-chunkah: true
+          sbom-attestation-enabled: true
 
           push-enabled: ${{ forgejo.ref == 'refs/heads/main' }}
           registry-password: ${{ secrets.REGISTRY_TOKEN }}
