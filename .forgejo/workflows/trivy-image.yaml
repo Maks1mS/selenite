@@ -10,6 +10,9 @@ jobs:
     name: Scan
     runs-on: als-huge
 
+    container:
+      image: altlinux.space/actions/runner/containers:sisyphus
+
     steps:
       - &checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
