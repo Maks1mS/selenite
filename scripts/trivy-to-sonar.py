@@ -78,7 +78,7 @@ def trivy_to_sonar(trivy_report_file, output_file):
         return
 
     sonar_issues = []
-    dockerfile_path = "Dockerfile" if os.path.exists("Dockerfile") else "."
+    dockerfile_path = "Containerfile" if os.path.exists("Containerfile") else "."
 
     if 'Results' in trivy_data:
         for result in trivy_data['Results']:
