@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"charm.land/ssh"
 	"charm.land/wish/v2"
-	"github.com/charmbracelet/ssh"
 	"github.com/stretchr/testify/require"
 	gossh "golang.org/x/crypto/ssh"
 

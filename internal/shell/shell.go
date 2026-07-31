@@ -13,7 +13,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/charmbracelet/ssh"
+	"charm.land/ssh"
 )
 
 //go:embed banner.txt

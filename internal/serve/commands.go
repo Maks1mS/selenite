@@ -13,8 +13,8 @@ import (
 	"regexp"
 	"strconv"
 
+	"charm.land/ssh"
 	"github.com/casbin/casbin/v3"
-	"github.com/charmbracelet/ssh"
 	"github.com/urfave/cli/v3"
 	gossh "golang.org/x/crypto/ssh"
 

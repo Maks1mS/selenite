@@ -29,7 +29,7 @@ packages:
       pkgname: mocks
     interfaces:
       Runner:
-  github.com/charmbracelet/ssh:
+  charm.land/ssh:
     config:
       dir: "internal/serve/mocks"
       filename: "mock_ssh.go"

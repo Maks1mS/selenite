@@ -8,7 +8,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/charmbracelet/ssh"
+	"charm.land/ssh"
 	mock "github.com/stretchr/testify/mock"
 )
 

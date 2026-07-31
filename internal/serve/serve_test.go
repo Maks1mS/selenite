@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/ssh"
+	"charm.land/ssh"
 	"github.com/stretchr/testify/require"
 
 	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
