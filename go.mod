@@ -6,7 +6,7 @@ toolchain go1.26.5
 
 require (
 	charm.land/log/v2 v2.0.0
-	charm.land/ssh v0.4.1
+	charm.land/ssh v0.4.2
 	charm.land/wish/v2 v2.0.2
 	github.com/casbin/casbin/v3 v3.10.0
 	github.com/goccy/go-yaml v1.19.2
