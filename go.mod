@@ -8,7 +8,7 @@ require (
 	charm.land/log/v2 v2.0.0
 	charm.land/ssh v0.4.2
 	charm.land/wish/v2 v2.0.3
-	github.com/casbin/casbin/v3 v3.10.0
+	github.com/casbin/casbin/v3 v3.11.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/gofrs/flock v0.13.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
