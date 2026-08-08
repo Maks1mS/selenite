@@ -12,7 +12,7 @@ require (
 	github.com/goccy/go-yaml v1.19.2
 	github.com/gofrs/flock v0.13.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/klauspost/compress v1.19.1
+	github.com/klauspost/compress v1.19.2
 	github.com/otiai10/copy v1.14.1
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli-docs/v3 v3.1.0
