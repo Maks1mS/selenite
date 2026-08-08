@@ -157,6 +157,7 @@ func configCommand() *cli.Command {
 		Usage: "Machine config",
 		Commands: []*cli.Command{
 			applyConfigCommand(),
+			showConfigCommand(),
 		},
 	}
 }
@@ -183,6 +184,17 @@ func applyConfigCommand() *cli.Command {
 				}
 			}
 			return nil
+		},
+	}
+}
+
+func showConfigCommand() *cli.Command {
+	return &cli.Command{
+		Name:   "show",
+		Usage:  "Show the current machine config",
+		Before: requirePermission("machine/config", access.GetVerb),
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return machine.New().ShowConfig(ctx, c.Writer)
 		},
 	}
 }

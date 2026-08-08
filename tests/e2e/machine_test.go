@@ -7,6 +7,7 @@
 package e2e
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 var (
@@ -54,14 +56,33 @@ func TestMachine(t *testing.T) {
 		mustRunCmd(t, client, "machine info")
 	})
 
+	run(t, "'machine config show' shows config after provision", func(t *testing.T) {
+		out := mustRunCmd(t, client, "machine config show")
+		assert.Contains(t, out, "access:")
+		assert.Contains(t, out, "provisioner")
+	})
+
 	run(t, "'machine config apply' works", func(t *testing.T) {
-		cfg := `
+		keyStr := strings.TrimRight(string(gossh.MarshalAuthorizedKey(client.publicKey)), "\n")
+		cfg := fmt.Sprintf(`
+access:
+  users:
+    - name: provisioner
+      roles:
+        - root
+      keys:
+        - %q
 sysctl:
   params:
     net.ipv4.ip_unprivileged_port_start: 80
-`
+`, keyStr)
 
-		mustRunCmdWithStdin(t, client, "machine apply", strings.NewReader(cfg))
+		mustRunCmdWithStdin(t, client, "machine config apply", strings.NewReader(cfg))
+	})
+
+	run(t, "'machine config show' reflects applied config", func(t *testing.T) {
+		out := mustRunCmd(t, client, "machine config show")
+		assert.Contains(t, out, "ip_unprivileged_port_start")
 	})
 
 	// var uptimeBefore int

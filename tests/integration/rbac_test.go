@@ -36,6 +36,7 @@ var protectedCommands = []commandRBACCase{
 	{[]string{"", "machine", "rollback"}, "machine/rollback", "invoke"},
 	{[]string{"", "machine", "switch", "myimage"}, "machine/switch", "invoke"},
 	{[]string{"", "machine", "config", "apply"}, "machine/config", "update"},
+	{[]string{"", "machine", "config", "show"}, "machine/config", "get"},
 	{[]string{"", "machine", "logs"}, "machine/logs", "get"},
 	// stack
 	{[]string{"", "stack", "deploy", "myapp"}, "stack/myapp", "create"},

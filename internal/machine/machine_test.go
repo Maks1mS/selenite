@@ -5,6 +5,7 @@
 package machine
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -22,6 +23,21 @@ type noopStore struct{}
 
 func (noopStore) Load() (*config.MachineConfig, error) { return &config.MachineConfig{}, nil }
 func (noopStore) Save(*config.MachineConfig) error     { return nil }
+
+// capturingStore records the last saved config and returns a configurable
+// loaded config.
+type capturingStore struct {
+	loaded *config.MachineConfig
+	saved  *config.MachineConfig
+}
+
+func (s *capturingStore) Load() (*config.MachineConfig, error) {
+	if s.loaded == nil {
+		return &config.MachineConfig{}, nil
+	}
+	return s.loaded, nil
+}
+func (s *capturingStore) Save(cfg *config.MachineConfig) error { s.saved = cfg; return nil }
 
 func newTestMachine(t *testing.T, runner *mocks.MockRunner) *machineManager {
 	t.Helper()
@@ -170,5 +186,25 @@ sysctl:
 
 		err := m.ApplyConfig(context.Background(), strings.NewReader(cfg), io.Discard)
 		require.NoError(t, err)
+	})
+}
+
+func TestShowConfig(t *testing.T) {
+	t.Run("outputs stored config as YAML", func(t *testing.T) {
+		store := &capturingStore{loaded: &config.MachineConfig{
+			Access: config.AccessConfig{
+				Users: []config.User{{Name: "bob", Roles: []string{"root"}}},
+			},
+			Sysctl: config.SysctlConfig{Params: map[string]string{
+				"net.ipv4.ip_unprivileged_port_start": "80",
+			}},
+		}}
+		m := &machineManager{runner: mocks.NewMockRunner(t), store: store}
+
+		var out bytes.Buffer
+		require.NoError(t, m.ShowConfig(context.Background(), &out))
+
+		require.Contains(t, out.String(), "name: bob")
+		require.Contains(t, out.String(), "net.ipv4.ip_unprivileged_port_start: \"80\"")
 	})
 }

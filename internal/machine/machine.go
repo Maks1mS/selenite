@@ -16,6 +16,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/goccy/go-yaml"
+
 	"altlinux.space/alt-atomic/selenite/internal/executil"
 	config "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
 	"altlinux.space/alt-atomic/selenite/internal/version"
@@ -258,5 +260,19 @@ func (m *machineManager) ApplyConfig(ctx context.Context, r io.Reader, w io.Writ
 		return fmt.Errorf("apply: %w", err)
 	}
 
+	return nil
+}
+
+// ShowConfig writes the currently stored machine config as YAML.
+func (m *machineManager) ShowConfig(_ context.Context, w io.Writer) error {
+	cfg, err := m.store.Load()
+	if err != nil {
+		return fmt.Errorf("show config: load: %w", err)
+	}
+	b, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("show config: marshal: %w", err)
+	}
+	_, _ = w.Write(b)
 	return nil
 }
