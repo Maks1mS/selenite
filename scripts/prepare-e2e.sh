@@ -55,6 +55,7 @@ sudo podman run --rm --privileged --pid=host \
         --generic-image \
         --via-loopback \
         --filesystem ext4 \
+        --disable-selinux \
         "/output/$DISK_IMAGE"
 
 sudo bash -c "echo \"$CACHE_KEY\" > \"$CACHE_FILE\""
