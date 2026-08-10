@@ -263,6 +263,26 @@ func (m *machineManager) ApplyConfig(ctx context.Context, r io.Reader, w io.Writ
 	return nil
 }
 
+// Provision performs the first-boot provisioning
+func (m *machineManager) Provision(ctx context.Context, w io.Writer, authorizedKey string) error {
+	cfg, err := m.store.Load()
+	if err != nil {
+		return fmt.Errorf("provision: load config: %w", err)
+	}
+
+	cfg.Access.Users = []config.User{{
+		Name:  "provisioner",
+		Roles: []string{"root"},
+		Keys:  []string{strings.TrimRight(authorizedKey, "\n")},
+	}}
+
+	if err := m.store.Save(cfg); err != nil {
+		return fmt.Errorf("provision: save config: %w", err)
+	}
+	_, _ = fmt.Fprintln(w, "Provisioning complete.")
+	return nil
+}
+
 // ShowConfig writes the currently stored machine config as YAML.
 func (m *machineManager) ShowConfig(_ context.Context, w io.Writer) error {
 	cfg, err := m.store.Load()

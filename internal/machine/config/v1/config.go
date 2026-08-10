@@ -75,11 +75,16 @@ type MonitoringConfig struct {
 	Loki       LokiConfig       `yaml:"loki"`
 }
 
+type NetworkConfig struct {
+	DesiredState yaml.RawMessage `yaml:"desired_state"`
+}
+
 type MachineConfig struct {
 	Sysctl     SysctlConfig     `yaml:"sysctl"`
 	Access     AccessConfig     `yaml:"access"`
 	Netbird    NetbirdConfig    `yaml:"netbird"`
 	Monitoring MonitoringConfig `yaml:"monitoring"`
+	Network    NetworkConfig    `yaml:"network"`
 }
 
 func ParseMachineConfig(b []byte) (*MachineConfig, error) {

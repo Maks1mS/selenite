@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -163,6 +164,22 @@ func TestApplyConfig(t *testing.T) {
 		r.EXPECT().
 			Run(
 				context.Background(),
+				"/usr/libexec/selenite-controller/nmstate-helper",
+				[]string{"backup"},
+				mock.Anything,
+			).
+			Return(nil)
+		r.EXPECT().
+			Run(
+				context.Background(),
+				"/usr/libexec/selenite-controller/nmstate-helper",
+				[]string{"apply"},
+				mock.Anything,
+			).
+			Return(nil)
+		r.EXPECT().
+			Run(
+				context.Background(),
 				"/usr/libexec/selenite-controller/sysctl-helper",
 				[]string{},
 				mock.Anything,
@@ -170,6 +187,43 @@ func TestApplyConfig(t *testing.T) {
 			Return(nil)
 
 		m := newTestMachine(t, r)
+
+		cfg := `
+access:
+  users:
+    - name: root
+      roles:
+        - root
+      keys:
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJOlcwmfZCWi/5k6bZu7GZ8LOfxwaSjf3/PkBan+UPwJ"
+network:
+  desired_state:
+    interfaces:
+      - name: dummy0
+        type: dummy
+        state: up
+sysctl:
+  params:
+    net.ipv4.ip_unprivileged_port_start: 1024
+`
+
+		err := m.ApplyConfig(context.Background(), strings.NewReader(cfg), io.Discard)
+		require.NoError(t, err)
+	})
+
+	t.Run("apply without network section works", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(
+				context.Background(),
+				"/usr/libexec/selenite-controller/sysctl-helper",
+				[]string{},
+				mock.Anything,
+			).
+			Return(nil)
+
+		store := &capturingStore{loaded: &config.MachineConfig{}}
+		m := &machineManager{runner: r, store: store}
 
 		cfg := `
 access:
@@ -188,6 +242,51 @@ sysctl:
 		require.NoError(t, err)
 	})
 }
+
+func TestProvision(t *testing.T) {
+	ctx := context.Background()
+	const authorizedKey = "ssh-ed25519 AAAAprovisioner"
+
+	t.Run("adds provisioner user", func(t *testing.T) {
+		store := &capturingStore{loaded: &config.MachineConfig{}}
+		m := &machineManager{runner: mocks.NewMockRunner(t), store: store}
+
+		var out bytes.Buffer
+		require.NoError(t, m.Provision(ctx, &out, authorizedKey))
+
+		require.NotNil(t, store.saved)
+		require.Len(t, store.saved.Access.Users, 1)
+		require.Equal(t, "provisioner", store.saved.Access.Users[0].Name)
+		require.Equal(t, []string{"root"}, store.saved.Access.Users[0].Roles)
+		require.Equal(t, []string{authorizedKey}, store.saved.Access.Users[0].Keys)
+		require.Contains(t, out.String(), "Provisioning complete")
+	})
+
+	t.Run("save error is propagated", func(t *testing.T) {
+		store := &capturingStore{loaded: &config.MachineConfig{}}
+		m := &machineManager{runner: mocks.NewMockRunner(t), store: store}
+		// Force save to fail by using a store that always errors.
+		badStore := &failStore{inner: store}
+		m.store = badStore
+
+		err := m.Provision(ctx, io.Discard, authorizedKey)
+		require.ErrorContains(t, err, "provision: save config")
+	})
+}
+
+// failStore wraps a real store and always returns an error on Save.
+type failStore struct {
+	inner config.Store
+}
+
+func (s *failStore) Load() (*config.MachineConfig, error) {
+	cfg, err := s.inner.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failStore load: %w", err)
+	}
+	return cfg, nil
+}
+func (s *failStore) Save(*config.MachineConfig) error { return errors.New("disk full") }
 
 func TestShowConfig(t *testing.T) {
 	t.Run("outputs stored config as YAML", func(t *testing.T) {

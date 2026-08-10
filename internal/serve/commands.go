@@ -19,7 +19,7 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 
 	"altlinux.space/alt-atomic/selenite/internal/access"
-	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
+	"altlinux.space/alt-atomic/selenite/internal/machine"
 	"altlinux.space/alt-atomic/selenite/internal/shell"
 )
 
@@ -168,21 +168,10 @@ func provisionCommand(sess ssh.Session) *cli.Command {
 				return fmt.Errorf("provision: machine is already provisioned")
 			}
 
-			store := v1.ConfigStore{}
-			cfg, err := store.Load()
-			if err != nil {
-				return fmt.Errorf("provision: load config: %w", err)
-			}
-
 			keyStr := string(bytes.TrimRight(
 				gossh.MarshalAuthorizedKey(sess.PublicKey()), "\n",
 			))
-			cfg.Access.Users = append(cfg.Access.Users, v1.User{
-				Name:  "provisioner",
-				Roles: []string{"root"},
-				Keys:  []string{keyStr},
-			})
-			return store.Save(cfg)
+			return machine.New().Provision(ctx, c.Writer, keyStr)
 		},
 	}
 }

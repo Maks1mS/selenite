@@ -25,7 +25,8 @@ RUN mkdir /out && \
         selenite-machine-helper \
         sysctl-helper \
         netbird-helper \
-        alloy-helper; \
+        alloy-helper \
+        nmstate-helper; \
     do \
         CGO_ENABLED=1 \
         GOOS=linux \
@@ -62,7 +63,8 @@ RUN --mount=from=selenite-controller,source=/out,target=/out \
         selenite-machine-helper \
         sysctl-helper \
         netbird-helper \
-        alloy-helper; \
+        alloy-helper \
+        nmstate-helper; \
     do \
         install -o root -g _selenite-controller -m 4750 /out/$cmd /usr/libexec/selenite-controller/$cmd; \
     done

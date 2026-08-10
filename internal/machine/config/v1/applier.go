@@ -15,6 +15,8 @@ import (
 
 	gossh "golang.org/x/crypto/ssh"
 
+	"github.com/goccy/go-yaml"
+
 	"altlinux.space/alt-atomic/selenite/internal/executil"
 )
 
@@ -22,6 +24,7 @@ const (
 	sysctlHelperBin  = "/usr/libexec/selenite-controller/sysctl-helper"
 	netbirdHelperBin = "/usr/libexec/selenite-controller/netbird-helper"
 	alloyHelperBin   = "/usr/libexec/selenite-controller/alloy-helper"
+	nmstateHelperBin = "/usr/libexec/selenite-controller/nmstate-helper"
 )
 
 type ModuleApplier interface {
@@ -52,16 +55,28 @@ func NewApplier(cfg, prev *MachineConfig, r executil.Runner, s Store) *Applier {
 	if prev != nil {
 		prevMonitoring = prev.Monitoring
 	}
+	var prevNetwork NetworkConfig
+	if prev != nil {
+		prevNetwork = prev.Network
+	}
+
+	modules := []ModuleApplier{
+		NewAccessApplier(cfg.Access),
+		NewSysctlApplier(cfg.Sysctl.Params, prevSysctl, r),
+		NewNetbirdApplier(cfg.Netbird, prevNetbird, r),
+		NewMonitoringApplier(cfg.Monitoring, prevMonitoring, r),
+	}
+	// Network is managed when either the current or previous config has a
+	// desired state. When the current config drops the section we run a
+	// cleanup that restores the baseline captured before the first apply.
+	if len(bytes.TrimSpace(cfg.Network.DesiredState)) > 0 || len(bytes.TrimSpace(prev.Network.DesiredState)) > 0 {
+		modules = append(modules, NewNetworkApplier(cfg.Network, prevNetwork, r))
+	}
 	return &Applier{
-		modules: []ModuleApplier{
-			NewAccessApplier(cfg.Access),
-			NewSysctlApplier(cfg.Sysctl.Params, prevSysctl, r),
-			NewNetbirdApplier(cfg.Netbird, prevNetbird, r),
-			NewMonitoringApplier(cfg.Monitoring, prevMonitoring, r),
-		},
-		prev:  prev,
-		cfg:   cfg,
-		store: s,
+		modules: modules,
+		prev:    prev,
+		cfg:     cfg,
+		store:   s,
 	}
 }
 
@@ -371,4 +386,82 @@ func boolEnv(b bool) string {
 		return "1"
 	}
 	return "0"
+}
+
+// NetworkApplier applies the desired network state via nmstate.
+type NetworkApplier struct {
+	newParams  NetworkConfig
+	prevParams NetworkConfig
+	r          executil.Runner
+
+	backupDone bool
+}
+
+func NewNetworkApplier(newParams, prevParams NetworkConfig, r executil.Runner) *NetworkApplier {
+	return &NetworkApplier{newParams: newParams, prevParams: prevParams, r: r}
+}
+
+func (a *NetworkApplier) Name() string {
+	return "network"
+}
+
+func (a *NetworkApplier) Validate(_ context.Context) error {
+	if len(bytes.TrimSpace(a.newParams.DesiredState)) == 0 {
+		if len(bytes.TrimSpace(a.prevParams.DesiredState)) == 0 {
+			return errors.New("network.desired_state is required")
+		}
+		// The section was removed from the config (cleanup mode), so there
+		// is nothing new to validate. The baseline-driven cleanup is handled
+		// by Apply.
+		return nil
+	}
+	// nmstate desired state is always a YAML mapping (interfaces, routes, ...
+	// top-level keys). An empty mapping or a non-mapping scalar is not a
+	// meaningful network configuration and is rejected.
+	var state map[string]any
+	if err := yaml.Unmarshal(a.newParams.DesiredState, &state); err != nil {
+		return fmt.Errorf("network.desired_state is not a valid nmstate mapping: %w", err)
+	}
+	if len(state) == 0 {
+		return errors.New("network.desired_state must not be empty")
+	}
+	return nil
+}
+
+func (a *NetworkApplier) Apply(ctx context.Context) error {
+	if bytes.Equal(bytes.TrimSpace(a.newParams.DesiredState), bytes.TrimSpace(a.prevParams.DesiredState)) {
+		return nil
+	}
+
+	if err := a.r.Run(ctx, nmstateHelperBin, []string{"backup"}); err != nil {
+		return fmt.Errorf("nmstate-helper backup: %w", err)
+	}
+	a.backupDone = true
+
+	if len(bytes.TrimSpace(a.newParams.DesiredState)) == 0 {
+		if err := a.r.Run(ctx, nmstateHelperBin, []string{"cleanup"}); err != nil {
+			return fmt.Errorf("nmstate-helper cleanup: %w", err)
+		}
+		return nil
+	}
+
+	if err := a.r.Run(
+		ctx,
+		nmstateHelperBin,
+		[]string{"apply"},
+		executil.WithStdin(bytes.NewReader(a.newParams.DesiredState)),
+	); err != nil {
+		return fmt.Errorf("nmstate-helper apply: %w", err)
+	}
+	return nil
+}
+
+func (a *NetworkApplier) Rollback(ctx context.Context) error {
+	if !a.backupDone {
+		return nil
+	}
+	if err := a.r.Run(ctx, nmstateHelperBin, []string{"restore"}); err != nil {
+		return fmt.Errorf("nmstate-helper restore: %w", err)
+	}
+	return nil
 }

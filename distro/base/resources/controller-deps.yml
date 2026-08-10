@@ -16,3 +16,5 @@ modules:
         - netbird
         # alloy-helper
         - alloy
+        # nmstate-helper
+        - nmstate
