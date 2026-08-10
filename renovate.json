@@ -29,7 +29,7 @@
                 "altlinux.space/alt-atomic/core-minimal/stable"
             ],
             "schedule": [
-                "* * * * 1"
+                "* 14-23 1 * *"
             ],
             "semanticCommitType": "fix",
             "semanticCommitScope": ""
