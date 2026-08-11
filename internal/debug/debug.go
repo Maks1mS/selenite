@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package shell
+package debug
 
 import (
 	"context"
@@ -16,20 +16,18 @@ import (
 	"charm.land/ssh"
 )
 
-//go:embed banner.txt
-var banner []byte
+const HelperBin = "/usr/libexec/selenite-controller/debug-helper"
 
-func Shell(ctx context.Context, sess ssh.Session) error {
-	_, _ = sess.Write(banner)
-
+func Run(ctx context.Context, sess ssh.Session, image string, args []string) error {
 	ppty, _, _ := sess.Pty()
 
-	cmd := exec.CommandContext(ctx, "busybox", "sh")
+	cmdArgs := append([]string{image}, args...)
+	//nolint:gosec // HelperBin is a const, args are passed through to the trusted helper
+	cmd := exec.CommandContext(ctx, HelperBin, cmdArgs...)
 	env := os.Environ()
 	env = appendOrReplace(env, "TERM="+ppty.Term)
 	cmd.Env = env
 
-	// Without this cause SIGTTIN on the server process
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setsid:  true,
 		Setctty: true,

@@ -19,8 +19,8 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 
 	"altlinux.space/alt-atomic/selenite/internal/access"
+	"altlinux.space/alt-atomic/selenite/internal/debug"
 	"altlinux.space/alt-atomic/selenite/internal/machine"
-	"altlinux.space/alt-atomic/selenite/internal/shell"
 )
 
 type ctxKey string
@@ -74,7 +74,7 @@ func AppCmd(sess ssh.Session) *cli.Command {
 			stackCommand(),
 			infraCommand(),
 			machineCommands(),
-			shellCommand(sess),
+			debugCommand(sess),
 			provisionCommand(sess),
 			// versionCommand(),
 		},
@@ -131,16 +131,29 @@ func prepareCmdForWish(cmd *cli.Command, sess ssh.Session) {
 	}
 }
 
-func shellCommand(sess ssh.Session) *cli.Command {
+func debugCommand(sess ssh.Session) *cli.Command {
 	return &cli.Command{
-		Name:  "shell",
-		Usage: "Start a shell session",
+		Name:      "debug",
+		Usage:     "Start a privileged debug container",
+		ArgsUsage: "<image> [command...]",
+		Before:    requirePermission("debug", access.InvokeVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
+			if sess == nil {
+				return errors.New("requires an active PTY")
+			}
 			_, _, active := sess.Pty()
 			if !active {
 				return errors.New("requires an active PTY")
 			}
-			return shell.Shell(ctx, sess)
+			image := c.Args().Get(0)
+			if image == "" {
+				return errors.New("image is required")
+			}
+			var args []string
+			if c.NArg() > 1 {
+				args = c.Args().Slice()[1:]
+			}
+			return debug.Run(ctx, sess, image, args)
 		},
 	}
 }

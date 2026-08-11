@@ -192,6 +192,32 @@ func WithCombinedOutput(w io.Writer) Option {
 }
 func WithStdin(r io.Reader) Option { return func(c *gossh.Session) { c.Stdin = r } }
 
+func runPtyCmd(t *testing.T, client *gossh.Client, cmd string) (string, error) {
+	t.Helper()
+	sess, err := client.NewSession()
+	if err != nil {
+		return "", fmt.Errorf("new session: %w", err)
+	}
+	defer sess.Close()
+
+	if err := sess.RequestPty("xterm", 80, 24, gossh.TerminalModes{}); err != nil {
+		return "", fmt.Errorf("request pty: %w", err)
+	}
+
+	var buf strings.Builder
+	sess.Stdout = &buf
+	sess.Stderr = &buf
+
+	if err := sess.Run(cmd); err != nil {
+		var ee *gossh.ExitError
+		if errors.As(err, &ee) {
+			return buf.String(), ee
+		}
+		return buf.String(), err
+	}
+	return buf.String(), nil
+}
+
 func sshRun(client *gossh.Client, cmd string, opts ...Option) error {
 	sess, err := client.NewSession()
 	if err != nil {
