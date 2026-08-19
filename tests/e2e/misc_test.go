@@ -37,7 +37,7 @@ func TestMiscCommandsWorks(t *testing.T) {
 	})
 
 	run(t, "debug requires image", func(t *testing.T) {
-		out, err := runCmdWithStdin(t, client.ssh, "debug", nil)
+		out, err := runPtyCmd(t, client.ssh, "debug")
 		require.Error(t, err)
 		assert.Contains(t, out, "image is required")
 	})
