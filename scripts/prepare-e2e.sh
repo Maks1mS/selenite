@@ -54,7 +54,7 @@ sudo podman run --rm --privileged --pid=host \
     bootc install to-disk \
         --generic-image \
         --via-loopback \
-        --filesystem ext4 \
+        --filesystem btrfs \
         --disable-selinux \
         "/output/$DISK_IMAGE"
 
