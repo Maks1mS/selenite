@@ -47,7 +47,7 @@ jobs:
       - &install-go-task
         name: Install go-task
         run: |
-          go install github.com/go-task/task/v3/cmd/task@bd79c29a39b1fc4a7cdd0ef9f2c3cd2f06886e2a # v3.51.1
+          go install github.com/go-task/task/v3/cmd/task@ff3372fc50a47348610d722616f1a073aace0513 # v3.53.1
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - run: SKIP=test-unit pre-commit run --all-files
