@@ -10,7 +10,7 @@ require (
 	charm.land/wish/v2 v2.0.3
 	github.com/casbin/casbin/v3 v3.11.0
 	github.com/goccy/go-yaml v1.19.2
-	github.com/gofrs/flock v0.13.0
+	github.com/gofrs/flock v0.13.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.19.2
 	github.com/otiai10/copy v1.14.1
