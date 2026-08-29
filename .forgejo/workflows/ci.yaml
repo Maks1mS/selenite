@@ -194,6 +194,7 @@ jobs:
           cosign-password: ${{ secrets.COSIGN_PASSWORD }}
 
   build-image-manifest:
+    if: ${{ forgejo.ref == 'refs/heads/main' }}
     name: Build image manifest
     runs-on: als-huge
     needs: [generate-version, build-image]
