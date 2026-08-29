@@ -124,13 +124,13 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
-  build-image:
-    name: Build image
-    runs-on: als-huge
-    needs: [checks, test-unit, test-integration]
+  generate-version:
+    name: Generate version
+    runs-on: als-tiny
 
-    container:
-      image: altlinux.space/alt-atomic/builder-image:sisyphus
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      git_commit: ${{ steps.version.outputs.git_commit }}
 
     steps:
       - <<: *checkout
@@ -141,8 +141,19 @@ jobs:
         id: version
         run: |
           VERSION=$(git describe --tags 2>/dev/null || git rev-parse --short HEAD)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "git_commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $FORGEJO_OUTPUT
+          echo "git_commit=$(git rev-parse HEAD)" >> $FORGEJO_OUTPUT
+
+  build-image:
+    name: Build image
+    runs-on: als-huge
+    needs: [generate-version, checks, test-unit, test-integration]
+
+    container:
+      image: altlinux.space/alt-atomic/builder-image:sisyphus
+
+    steps:
+      - *checkout
 
       - name: Compute podman extra args
         id: podman_args
@@ -157,19 +168,19 @@ jobs:
         uses: alt-atomic/actions/build-and-push@803d138a7b55b5f3b44ae681f84d029e53426848
         with:
           image-name: alt-atomic/selenite/cloud/amd64
-          image-tag: ${{ steps.version.outputs.version }}
+          image-tag: ${{ needs.generate-version.outputs.version }}
           image-aliases: nightly
 
           packages-info-enabled: false
 
           build-args: |
-            VERSION=${{ steps.version.outputs.version }}
-            GIT_COMMIT=${{ steps.version.outputs.git_commit }}
+            VERSION=${{ needs.generate-version.outputs.version }}
+            GIT_COMMIT=${{ needs.generate-version.outputs.git_commit }}
 
           podman-extra-args: ${{ steps.podman_args.outputs.args }}
 
           pretty-name: Selenite
-          version: ${{ steps.version.outputs.version }}
+          version: ${{ needs.generate-version.outputs.version }}
           source: ${{ forgejo.server_url }}/${{ forgejo.repository }}
           rechunk-enabled: true
           experimental-use-chunkah: true
@@ -185,7 +196,7 @@ jobs:
   build-image-manifest:
     name: Build image manifest
     runs-on: als-huge
-    needs: [build-image]
+    needs: [generate-version, build-image]
 
     container:
       image: altlinux.space/alt-atomic/builder-image:sisyphus
@@ -202,7 +213,7 @@ jobs:
           image-wildcard: alt-atomic/selenite/cloud/@ARCH@
           arch-tags: amd64
 
-          image-tag: ${{ steps.version.outputs.version }}
+          image-tag: ${{ needs.generate-version.outputs.version }}
           image-aliases: nightly
 
           cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
