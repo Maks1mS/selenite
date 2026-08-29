@@ -194,6 +194,10 @@ jobs:
     - name: Create manifest
       uses: alt-atomic/actions/create-manifest@803d138a7b55b5f3b44ae681f84d029e53426848
       with:
+          registry: ${{ env.REGISTRY }}
+          registry-username: "<token>"
+          registry-password: ${{ secrets.REGISTRY_TOKEN }}
+
           image-name: alt-atomic/selenite/cloud
           image-wildcard: alt-atomic/selenite/cloud/@ARCH@
           arch-tags: amd64
@@ -201,6 +205,5 @@ jobs:
           image-tag: ${{ steps.version.outputs.version }}
           image-aliases: nightly
 
-          registry-password: ${{ secrets.REGISTRY_TOKEN }}
           cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
           cosign-password: ${{ secrets.COSIGN_PASSWORD }}
