@@ -156,7 +156,7 @@ jobs:
       - name: Build and push image
         uses: alt-atomic/actions/build-and-push@803d138a7b55b5f3b44ae681f84d029e53426848
         with:
-          image-name: alt-atomic/selenite/cloud
+          image-name: alt-atomic/selenite/cloud/amd64
           image-tag: ${{ steps.version.outputs.version }}
           image-aliases: nightly
 
@@ -178,6 +178,29 @@ jobs:
             org.alt-atomic.installer.custom-preset=selenite
 
           push-enabled: ${{ forgejo.ref == 'refs/heads/main' }}
+          registry-password: ${{ secrets.REGISTRY_TOKEN }}
+          cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
+          cosign-password: ${{ secrets.COSIGN_PASSWORD }}
+
+  build-image-manifest:
+    name: Build image manifest
+    runs-on: als-huge
+    needs: [build-image]
+
+    container:
+      image: altlinux.space/alt-atomic/builder-image:sisyphus
+
+    steps:
+    - name: Create manifest
+      uses: alt-atomic/actions/create-manifest@803d138a7b55b5f3b44ae681f84d029e53426848
+      with:
+          image-name: alt-atomic/selenite/cloud
+          image-wildcard: alt-atomic/selenite/cloud/@ARCH@
+          arch-tags: amd64
+
+          image-tag: ${{ steps.version.outputs.version }}
+          image-aliases: nightly
+
           registry-password: ${{ secrets.REGISTRY_TOKEN }}
           cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
           cosign-password: ${{ secrets.COSIGN_PASSWORD }}
