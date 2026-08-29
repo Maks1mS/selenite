@@ -7,8 +7,6 @@ modules:
         - podman-compose
         - sysctl-conf-userns
         - nftables
-        # TODO: remove (for debug only)
-        - nano
         # netbird-helper
         - netbird
         # alloy-helper
