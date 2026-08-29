@@ -27,7 +27,8 @@ RUN mkdir /out && \
         netbird-helper \
         alloy-helper \
         nmstate-helper \
-        debug-helper; \
+        debug-helper \
+        zram-helper; \
     do \
         CGO_ENABLED=1 \
         GOOS=linux \
@@ -66,7 +67,8 @@ RUN --mount=from=selenite-controller,source=/out,target=/out \
         netbird-helper \
         alloy-helper \
         nmstate-helper \
-        debug-helper; \
+        debug-helper \
+        zram-helper; \
     do \
         install -o root -g _selenite-controller -m 4750 /out/$cmd /usr/libexec/selenite-controller/$cmd; \
     done

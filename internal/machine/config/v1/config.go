@@ -79,12 +79,24 @@ type NetworkConfig struct {
 	DesiredState yaml.RawMessage `yaml:"desired_state"`
 }
 
+type ZramConfig struct {
+	Enabled      bool   `yaml:"enabled"`
+	Size         string `yaml:"size"`
+	Compression  string `yaml:"compression"`
+	SwapPriority int    `yaml:"swap_priority"`
+}
+
+type MemoryConfig struct {
+	Zram ZramConfig `yaml:"zram"`
+}
+
 type MachineConfig struct {
 	Sysctl     SysctlConfig     `yaml:"sysctl"`
 	Access     AccessConfig     `yaml:"access"`
 	Netbird    NetbirdConfig    `yaml:"netbird"`
 	Monitoring MonitoringConfig `yaml:"monitoring"`
 	Network    NetworkConfig    `yaml:"network"`
+	Memory     MemoryConfig     `yaml:"memory"`
 }
 
 func ParseMachineConfig(b []byte) (*MachineConfig, error) {

@@ -15,3 +15,5 @@ modules:
         - alloy
         # nmstate-helper
         - nmstate
+        # zram-helper
+        - zram-generator

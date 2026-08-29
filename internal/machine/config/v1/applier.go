@@ -25,6 +25,7 @@ const (
 	netbirdHelperBin = "/usr/libexec/selenite-controller/netbird-helper"
 	alloyHelperBin   = "/usr/libexec/selenite-controller/alloy-helper"
 	nmstateHelperBin = "/usr/libexec/selenite-controller/nmstate-helper"
+	zramHelperBin    = "/usr/libexec/selenite-controller/zram-helper"
 )
 
 type ModuleApplier interface {
@@ -59,12 +60,17 @@ func NewApplier(cfg, prev *MachineConfig, r executil.Runner, s Store) *Applier {
 	if prev != nil {
 		prevNetwork = prev.Network
 	}
+	var prevMemory MemoryConfig
+	if prev != nil {
+		prevMemory = prev.Memory
+	}
 
 	modules := []ModuleApplier{
 		NewAccessApplier(cfg.Access),
 		NewSysctlApplier(cfg.Sysctl.Params, prevSysctl, r),
 		NewNetbirdApplier(cfg.Netbird, prevNetbird, r),
 		NewMonitoringApplier(cfg.Monitoring, prevMonitoring, r),
+		NewZramApplier(cfg.Memory.Zram, prevMemory.Zram, r),
 	}
 	// Network is managed when either the current or previous config has a
 	// desired state. When the current config drops the section we run a
@@ -377,6 +383,58 @@ func (a *MonitoringApplier) runHelper(ctx context.Context, p MonitoringConfig) e
 		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_PASSWORD", p.Loki.Auth.Password),
 	); err != nil {
 		return fmt.Errorf("alloy-helper apply: %w", err)
+	}
+	return nil
+}
+
+type ZramApplier struct {
+	newParams  ZramConfig
+	prevParams ZramConfig
+	r          executil.Runner
+}
+
+func NewZramApplier(newParams, prevParams ZramConfig, r executil.Runner) *ZramApplier {
+	return &ZramApplier{newParams: newParams, prevParams: prevParams, r: r}
+}
+
+func (a *ZramApplier) Name() string { return "zram" }
+
+func (a *ZramApplier) Validate(_ context.Context) error {
+	if !a.newParams.Enabled {
+		return nil
+	}
+	if a.newParams.Size == "" {
+		return errors.New("memory.zram.size is required when enabled")
+	}
+	validCompressions := []string{"zstd", "lzo", "lz4", "lzo-rle", "lz4hc"}
+	if a.newParams.Compression != "" && !slices.Contains(validCompressions, a.newParams.Compression) {
+		return fmt.Errorf("invalid compression algorithm: %s", a.newParams.Compression)
+	}
+	return nil
+}
+
+func (a *ZramApplier) Apply(ctx context.Context) error {
+	if reflect.DeepEqual(a.newParams, a.prevParams) {
+		return nil
+	}
+	return a.runHelper(ctx, a.newParams)
+}
+
+func (a *ZramApplier) Rollback(ctx context.Context) error {
+	return a.runHelper(ctx, a.prevParams)
+}
+
+func (a *ZramApplier) runHelper(ctx context.Context, p ZramConfig) error {
+	if err := a.r.Run(
+		ctx,
+		zramHelperBin,
+		[]string{"apply"},
+		executil.WithEnv("SELENITE_ZRAM_ENABLED", boolEnv(p.Enabled)),
+		executil.WithEnv("SELENITE_ZRAM_SIZE", p.Size),
+		executil.WithEnv("SELENITE_ZRAM_COMPRESSION", p.Compression),
+		executil.WithEnv("SELENITE_ZRAM_PRIORITY", fmt.Sprintf("%d", p.SwapPriority)),
+	); err != nil {
+		return fmt.Errorf("zram-helper apply: %w", err)
 	}
 	return nil
 }
