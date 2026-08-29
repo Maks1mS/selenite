@@ -210,7 +210,7 @@ jobs:
           registry-password: ${{ secrets.REGISTRY_TOKEN }}
 
           image-name: alt-atomic/selenite/cloud
-          image-wildcard: alt-atomic/selenite/cloud/@ARCH@
+          image-wildcard: ${{ format('{0}/alt-atomic/selenite/cloud/@ARCH@:{1}', env.REGISTRY, needs.generate-version.outputs.version) }}
           arch-tags: amd64
 
           image-tag: ${{ needs.generate-version.outputs.version }}
