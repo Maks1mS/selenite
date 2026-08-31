@@ -2,7 +2,7 @@ module altlinux.space/alt-atomic/selenite
 
 go 1.25.12
 
-toolchain go1.26.6
+toolchain go1.27.0
 
 require (
 	charm.land/log/v2 v2.0.0
