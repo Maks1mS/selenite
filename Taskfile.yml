@@ -3,7 +3,7 @@
 version: '3'
 
 vars:
-  GOLANGCI_LINT_BIN: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@8f3b0c7ed018e57905fbd873c697e0b1ede605a5 # v2.11.4
+  GOLANGCI_LINT_BIN: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@27774aaf853a4fd21f1dd5e69439459dc1b26e68 # v2.13.2
   GO_LICENSES_BIN: go run github.com/google/go-licenses/v2@3e084b0caf710f7bfead967567539214f598c0a2 # v2.0.1
   ADDLICENSE_BIN: go run github.com/google/addlicense@b289835c0741ba2fb92dd5f61af070e79c69a55e # v1.2.0
   ALLOWED_LICENSES: MIT,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,MPL-2.0,MPL-2.0-no-copyleft-exception
