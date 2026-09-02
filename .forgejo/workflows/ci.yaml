@@ -165,7 +165,7 @@ jobs:
           echo "args=$ARGS" >> "$GITHUB_OUTPUT"
 
       - name: Build and push image
-        uses: alt-atomic/actions/build-and-push@803d138a7b55b5f3b44ae681f84d029e53426848
+        uses: alt-atomic/actions/build-and-push@e835eedfc64536d16df2a43259d034c5cb25e8ce
         with:
           image-name: alt-atomic/selenite/cloud/amd64
           image-tag: ${{ needs.generate-version.outputs.version }}
@@ -204,7 +204,7 @@ jobs:
 
     steps:
     - name: Create manifest
-      uses: alt-atomic/actions/create-manifest@803d138a7b55b5f3b44ae681f84d029e53426848
+      uses: alt-atomic/actions/create-manifest@e835eedfc64536d16df2a43259d034c5cb25e8ce
       with:
           registry: ${{ env.REGISTRY }}
           registry-username: "<token>"
