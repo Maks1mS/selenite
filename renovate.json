@@ -8,6 +8,19 @@
     ],
     "packageRules": [
         {
+            "description": "Group Go toolchain and golang Docker image updates",
+            "matchDatasources": [
+                "golang-version",
+                "docker"
+            ],
+            "matchPackageNames": [
+                "go",
+                "golang"
+            ],
+            "groupName": "Go toolchain",
+            "groupSlug": "go-toolchain"
+        },
+        {
             "description": "Do not update by digest with same tag",
             "matchDatasources": [
                 "docker"
