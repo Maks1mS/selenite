@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -19,6 +20,7 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"altlinux.space/alt-atomic/selenite/internal/executil"
+	"altlinux.space/alt-atomic/selenite/internal/machine/config/patch"
 	config "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
 	"altlinux.space/alt-atomic/selenite/internal/version"
 )
@@ -263,6 +265,43 @@ func (m *machineManager) ApplyConfig(ctx context.Context, r io.Reader, w io.Writ
 	return nil
 }
 
+func (m *machineManager) ApplyPatch(ctx context.Context, r io.Reader, w io.Writer) error {
+	dec := yaml.NewDecoder(r)
+	var patches [][]byte
+	for {
+		var value any
+		err := dec.Decode(&value)
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("decode patch: %w", err)
+		}
+		valueBytes, err := yaml.Marshal(value)
+		if err != nil {
+			return fmt.Errorf("marshal patch: %w", err)
+		}
+		patches = append(patches, valueBytes)
+	}
+
+	prev, err := m.store.Load()
+	if err != nil {
+		return fmt.Errorf("load previous config: %w", err)
+	}
+
+	cfg, err := patch.Patch(prev, patches)
+	if err != nil {
+		return fmt.Errorf("patch: %w", err)
+	}
+
+	applier := config.NewApplier(cfg, prev, m.runner, m.store)
+	if err := applier.Apply(ctx); err != nil {
+		return fmt.Errorf("apply: %w", err)
+	}
+
+	return nil
+}
+
 // Provision performs the first-boot provisioning
 func (m *machineManager) Provision(ctx context.Context, w io.Writer, authorizedKey string) error {
 	cfg, err := m.store.Load()
@@ -289,7 +328,7 @@ func (m *machineManager) ShowConfig(_ context.Context, w io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("show config: load: %w", err)
 	}
-	b, err := yaml.Marshal(cfg)
+	b, err := config.MarshalConfig(cfg)
 	if err != nil {
 		return fmt.Errorf("show config: marshal: %w", err)
 	}

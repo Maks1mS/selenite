@@ -157,6 +157,7 @@ func configCommand() *cli.Command {
 		Usage: "Machine config",
 		Commands: []*cli.Command{
 			applyConfigCommand(),
+			patchConfigCommand(),
 			showConfigCommand(),
 		},
 	}
@@ -175,6 +176,32 @@ func applyConfigCommand() *cli.Command {
 		Action: func(ctx context.Context, c *cli.Command) error {
 			m := machine.New()
 			if err := m.ApplyConfig(ctx, c.Reader, c.Writer); err != nil {
+				return fmt.Errorf("applyConfig: %w", err)
+			}
+
+			if c.Bool("reboot") {
+				if err := m.Reboot(ctx, c.Writer); err != nil {
+					return fmt.Errorf("reboot: %w", err)
+				}
+			}
+			return nil
+		},
+	}
+}
+
+func patchConfigCommand() *cli.Command {
+	return &cli.Command{
+		Name:   "patch",
+		Usage:  "Patch machine config",
+		Before: requirePermission("machine/config", access.UpdateVerb),
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name: "reboot",
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			m := machine.New()
+			if err := m.ApplyPatch(ctx, c.Reader, c.Writer); err != nil {
 				return fmt.Errorf("applyConfig: %w", err)
 			}
 

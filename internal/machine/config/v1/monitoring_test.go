@@ -11,6 +11,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/samber/mo"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -45,60 +46,60 @@ func TestMonitoringApplierValidate(t *testing.T) {
 	}{
 		{
 			name: "disabled passes without any subsystem",
-			cfg:  MonitoringConfig{Enabled: false},
+			cfg:  MonitoringConfig{Enabled: mo.Some(false)},
 		},
 		{
 			name:    "enabled with no subsystem enabled",
-			cfg:     MonitoringConfig{Enabled: true},
+			cfg:     MonitoringConfig{Enabled: mo.Some(true)},
 			wantErr: "at least one",
 		},
 		{
 			name: "prometheus enabled without endpoint",
 			cfg: MonitoringConfig{
-				Enabled:    true,
-				Prometheus: PrometheusConfig{Enabled: true},
+				Enabled:    mo.Some(true),
+				Prometheus: PrometheusConfig{Enabled: mo.Some(true)},
 			},
 			wantErr: "endpoint",
 		},
 		{
 			name: "loki enabled without endpoint",
 			cfg: MonitoringConfig{
-				Enabled: true,
-				Loki:    LokiConfig{Enabled: true},
+				Enabled: mo.Some(true),
+				Loki:    LokiConfig{Enabled: mo.Some(true)},
 			},
 			wantErr: "endpoint",
 		},
 		{
 			name: "prometheus only - ok",
 			cfg: MonitoringConfig{
-				Enabled: true,
+				Enabled: mo.Some(true),
 				Prometheus: PrometheusConfig{
-					Enabled:  true,
-					Endpoint: "http://mimir:9090/api/v1/write",
+					Enabled:  mo.Some(true),
+					Endpoint: mo.Some("http://mimir:9090/api/v1/write"),
 				},
 			},
 		},
 		{
 			name: "loki only - ok",
 			cfg: MonitoringConfig{
-				Enabled: true,
+				Enabled: mo.Some(true),
 				Loki: LokiConfig{
-					Enabled:  true,
-					Endpoint: "http://loki:3100/loki/api/v1/push",
+					Enabled:  mo.Some(true),
+					Endpoint: mo.Some("http://loki:3100/loki/api/v1/push"),
 				},
 			},
 		},
 		{
 			name: "both enabled - ok",
 			cfg: MonitoringConfig{
-				Enabled: true,
+				Enabled: mo.Some(true),
 				Prometheus: PrometheusConfig{
-					Enabled:  true,
-					Endpoint: "http://mimir:9090/api/v1/write",
+					Enabled:  mo.Some(true),
+					Endpoint: mo.Some("http://mimir:9090/api/v1/write"),
 				},
 				Loki: LokiConfig{
-					Enabled:  true,
-					Endpoint: "http://loki:3100/loki/api/v1/push",
+					Enabled:  mo.Some(true),
+					Endpoint: mo.Some("http://loki:3100/loki/api/v1/push"),
 				},
 			},
 		},
@@ -122,8 +123,8 @@ func TestMonitoringApplierApply(t *testing.T) {
 
 	t.Run("no-op when config unchanged", func(t *testing.T) {
 		cfg := MonitoringConfig{
-			Enabled:    true,
-			Prometheus: PrometheusConfig{Enabled: true, Endpoint: "http://mimir:9090/api/v1/write"},
+			Enabled:    mo.Some(true),
+			Prometheus: PrometheusConfig{Enabled: mo.Some(true), Endpoint: mo.Some("http://mimir:9090/api/v1/write")},
 		}
 		r := mocks.NewMockRunner(t)
 		// runner must not be called
@@ -131,8 +132,11 @@ func TestMonitoringApplierApply(t *testing.T) {
 	})
 
 	t.Run("disabled - passes enabled=0 to helper", func(t *testing.T) {
-		prev := MonitoringConfig{Enabled: true, Prometheus: PrometheusConfig{Enabled: true, Endpoint: "x"}}
-		curr := MonitoringConfig{Enabled: false}
+		prev := MonitoringConfig{
+			Enabled:    mo.Some(true),
+			Prometheus: PrometheusConfig{Enabled: mo.Some(true), Endpoint: mo.Some("x")},
+		}
+		curr := MonitoringConfig{Enabled: mo.Some(false)}
 
 		r := mocks.NewMockRunner(t)
 		r.EXPECT().
@@ -145,11 +149,11 @@ func TestMonitoringApplierApply(t *testing.T) {
 
 	t.Run("prometheus only - passes correct env", func(t *testing.T) {
 		cfg := MonitoringConfig{
-			Enabled: true,
+			Enabled: mo.Some(true),
 			Prometheus: PrometheusConfig{
-				Enabled:  true,
-				Endpoint: "http://mimir:9090/api/v1/write",
-				Auth:     MonitoringAuth{Username: "user", Password: "pass"},
+				Enabled:  mo.Some(true),
+				Endpoint: mo.Some("http://mimir:9090/api/v1/write"),
+				Auth:     MonitoringAuth{Username: mo.Some("user"), Password: mo.Some("pass")},
 			},
 		}
 
@@ -171,10 +175,10 @@ func TestMonitoringApplierApply(t *testing.T) {
 
 	t.Run("loki only - passes correct env", func(t *testing.T) {
 		cfg := MonitoringConfig{
-			Enabled: true,
+			Enabled: mo.Some(true),
 			Loki: LokiConfig{
-				Enabled:  true,
-				Endpoint: "http://loki:3100/loki/api/v1/push",
+				Enabled:  mo.Some(true),
+				Endpoint: mo.Some("http://loki:3100/loki/api/v1/push"),
 			},
 		}
 
@@ -194,8 +198,8 @@ func TestMonitoringApplierApply(t *testing.T) {
 
 	t.Run("helper error is propagated", func(t *testing.T) {
 		cfg := MonitoringConfig{
-			Enabled:    true,
-			Prometheus: PrometheusConfig{Enabled: true, Endpoint: "http://mimir:9090/api/v1/write"},
+			Enabled:    mo.Some(true),
+			Prometheus: PrometheusConfig{Enabled: mo.Some(true), Endpoint: mo.Some("http://mimir:9090/api/v1/write")},
 		}
 
 		r := mocks.NewMockRunner(t)
@@ -213,12 +217,15 @@ func TestMonitoringApplierRollback(t *testing.T) {
 
 	t.Run("rollback restores previous config", func(t *testing.T) {
 		prev := MonitoringConfig{
-			Enabled:    true,
-			Prometheus: PrometheusConfig{Enabled: true, Endpoint: "http://old:9090/api/v1/write"},
+			Enabled: mo.Some(true),
+			Prometheus: PrometheusConfig{
+				Enabled:  mo.Some(true),
+				Endpoint: mo.Some("http://old:9090/api/v1/write"),
+			},
 		}
 		curr := MonitoringConfig{
-			Enabled: true,
-			Loki:    LokiConfig{Enabled: true, Endpoint: "http://loki:3100/loki/api/v1/push"},
+			Enabled: mo.Some(true),
+			Loki:    LokiConfig{Enabled: mo.Some(true), Endpoint: mo.Some("http://loki:3100/loki/api/v1/push")},
 		}
 
 		r := mocks.NewMockRunner(t)

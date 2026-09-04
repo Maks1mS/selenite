@@ -9,24 +9,25 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samber/mo"
 	"github.com/stretchr/testify/require"
 
 	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
 )
 
 func TestGuardAllowDisabled(t *testing.T) {
-	g, err := NewGuard(v1.AuthGuardConfig{Enabled: false})
+	g, err := NewGuard(v1.AuthGuardConfig{Enabled: mo.Some(false)})
 	require.NoError(t, err)
 	require.True(t, g.Allow("1.2.3.4"))
 }
 
 func TestGuardBanAndExpire(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    3,
-		Window:        time.Hour,
-		BanDuration:   50 * time.Millisecond,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(3),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(50 * time.Millisecond),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 
@@ -44,11 +45,11 @@ func TestGuardBanAndExpire(t *testing.T) {
 
 func TestGuardCleanupRemovesStale(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    5,
-		Window:        time.Hour,
-		BanDuration:   time.Hour,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(5),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(time.Hour),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 
@@ -62,11 +63,11 @@ func TestGuardCleanupRemovesStale(t *testing.T) {
 
 func TestGuardCleanupRemovesExpired(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    2,
-		Window:        50 * time.Millisecond,
-		BanDuration:   50 * time.Millisecond,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(2),
+		Window:        mo.Some(50 * time.Millisecond),
+		BanDuration:   mo.Some(50 * time.Millisecond),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 
@@ -80,18 +81,18 @@ func TestGuardCleanupRemovesExpired(t *testing.T) {
 }
 
 func TestGuardRecordFailureDisabled(t *testing.T) {
-	g, err := NewGuard(v1.AuthGuardConfig{Enabled: false})
+	g, err := NewGuard(v1.AuthGuardConfig{Enabled: mo.Some(false)})
 	require.NoError(t, err)
 	require.False(t, g.RecordFailure("1.2.3.4"))
 }
 
 func TestGuardLRUEviction(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    5,
-		Window:        time.Hour,
-		BanDuration:   time.Hour,
-		MaxTrackedIPs: 2,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(5),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(time.Hour),
+		MaxTrackedIPs: mo.Some(2),
 	})
 	require.NoError(t, err)
 
@@ -105,11 +106,11 @@ func TestGuardLRUEviction(t *testing.T) {
 
 func TestGuardMemoryBounded(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    3,
-		Window:        time.Hour,
-		BanDuration:   time.Hour,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(3),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(time.Hour),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 
@@ -118,6 +119,6 @@ func TestGuardMemoryBounded(t *testing.T) {
 		_ = g.RecordFailure(ip)
 	}
 
-	require.LessOrEqual(t, g.attempts.Len(), g.cfg.MaxTrackedIPs)
-	require.LessOrEqual(t, g.bans.Len(), g.cfg.MaxTrackedIPs)
+	require.LessOrEqual(t, g.attempts.Len(), g.cfg.MaxTrackedIPs.OrEmpty())
+	require.LessOrEqual(t, g.bans.Len(), g.cfg.MaxTrackedIPs.OrEmpty())
 }

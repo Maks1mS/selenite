@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"charm.land/ssh"
+	"github.com/samber/mo"
 	"github.com/stretchr/testify/require"
 
 	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
@@ -24,11 +25,11 @@ func (a mockAddr) String() string  { return string(a) }
 
 func TestBanConnCallbackBlocksBannedIP(t *testing.T) {
 	g, err := authguard.NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    2,
-		Window:        time.Hour,
-		BanDuration:   time.Hour,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(2),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(time.Hour),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 
@@ -45,11 +46,11 @@ func TestBanConnCallbackBlocksBannedIP(t *testing.T) {
 
 func TestBanConnCallbackAllowsCleanIP(t *testing.T) {
 	g, err := authguard.NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    2,
-		Window:        time.Hour,
-		BanDuration:   time.Hour,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(2),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(time.Hour),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 
@@ -62,11 +63,11 @@ func TestBanConnCallbackAllowsCleanIP(t *testing.T) {
 
 func TestPublicKeyAuthWrapperCountsFailures(t *testing.T) {
 	g, err := authguard.NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    2,
-		Window:        time.Hour,
-		BanDuration:   time.Hour,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(2),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(time.Hour),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 

@@ -28,18 +28,18 @@ func NewGuard(cfg v1.AuthGuardConfig) (*Guard, error) {
 		cfg:         cfg,
 		persistPath: persistPath,
 	}
-	if !cfg.Enabled {
+	if !cfg.Enabled.OrEmpty() {
 		return g, nil
 	}
-	if cfg.MaxTrackedIPs < 1 {
+	if cfg.MaxTrackedIPs.OrEmpty() < 1 {
 		return nil, errors.New("authguard: MaxTrackedIPs must be at least 1")
 	}
 	var err error
-	g.attempts, err = lru.New[string, []time.Time](cfg.MaxTrackedIPs)
+	g.attempts, err = lru.New[string, []time.Time](cfg.MaxTrackedIPs.OrEmpty())
 	if err != nil {
 		return nil, err
 	}
-	g.bans, err = lru.New[string, time.Time](cfg.MaxTrackedIPs)
+	g.bans, err = lru.New[string, time.Time](cfg.MaxTrackedIPs.OrEmpty())
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (g *Guard) WithPersistPath(path string) *Guard {
 
 // Allow reports whether the IP is permitted to attempt authentication.
 func (g *Guard) Allow(ip string) bool {
-	if !g.cfg.Enabled {
+	if !g.cfg.Enabled.OrEmpty() {
 		return true
 	}
 	exp, ok := g.bans.Peek(ip)
@@ -74,10 +74,10 @@ func (g *Guard) Allow(ip string) bool {
 // RecordFailure increments the failure counter for the IP.
 // It returns true if the IP has just been banned.
 func (g *Guard) RecordFailure(ip string) (banned bool) {
-	if !g.cfg.Enabled {
+	if !g.cfg.Enabled.OrEmpty() {
 		return false
 	}
-	cutoff := time.Now().Add(-g.cfg.Window)
+	cutoff := time.Now().Add(-g.cfg.Window.OrEmpty())
 
 	stamps, _ := g.attempts.Get(ip)
 	var fresh []time.Time
@@ -89,8 +89,8 @@ func (g *Guard) RecordFailure(ip string) (banned bool) {
 	fresh = append(fresh, time.Now())
 	g.attempts.Add(ip, fresh)
 
-	if len(fresh) >= g.cfg.MaxRetries {
-		g.bans.Add(ip, time.Now().Add(g.cfg.BanDuration))
+	if len(fresh) >= g.cfg.MaxRetries.OrEmpty() {
+		g.bans.Add(ip, time.Now().Add(g.cfg.BanDuration.OrEmpty()))
 		g.attempts.Remove(ip)
 		_ = g.save()
 		return true
@@ -100,11 +100,11 @@ func (g *Guard) RecordFailure(ip string) (banned bool) {
 
 // Cleanup removes stale attempts and expired bans, then persists state if changed.
 func (g *Guard) Cleanup() {
-	if !g.cfg.Enabled {
+	if !g.cfg.Enabled.OrEmpty() {
 		return
 	}
 	now := time.Now()
-	cutoff := now.Add(-g.cfg.Window)
+	cutoff := now.Add(-g.cfg.Window.OrEmpty())
 	changed := false
 
 	for _, ip := range g.attempts.Keys() {
@@ -145,7 +145,7 @@ func (g *Guard) Cleanup() {
 
 // Save persists the current state to disk.
 func (g *Guard) Save() error {
-	if !g.cfg.Enabled {
+	if !g.cfg.Enabled.OrEmpty() {
 		return nil
 	}
 	return g.save()

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/samber/mo"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -25,33 +26,33 @@ func TestZramApplierValidate(t *testing.T) {
 	}{
 		{
 			name: "disabled passes without size",
-			cfg:  ZramConfig{Enabled: false},
+			cfg:  ZramConfig{Enabled: mo.Some(false)},
 		},
 		{
 			name:    "enabled without size",
-			cfg:     ZramConfig{Enabled: true},
+			cfg:     ZramConfig{Enabled: mo.Some(true)},
 			wantErr: "size is required",
 		},
 		{
 			name: "enabled with size - ok",
-			cfg:  ZramConfig{Enabled: true, Size: "ram/2"},
+			cfg:  ZramConfig{Enabled: mo.Some(true), Size: mo.Some("ram/2")},
 		},
 		{
 			name:    "invalid compression",
-			cfg:     ZramConfig{Enabled: true, Size: "ram/2", Compression: "invalid"},
+			cfg:     ZramConfig{Enabled: mo.Some(true), Size: mo.Some("ram/2"), Compression: mo.Some("invalid")},
 			wantErr: "invalid compression",
 		},
 		{
 			name: "valid compression zstd",
-			cfg:  ZramConfig{Enabled: true, Size: "ram/2", Compression: "zstd"},
+			cfg:  ZramConfig{Enabled: mo.Some(true), Size: mo.Some("ram/2"), Compression: mo.Some("zstd")},
 		},
 		{
 			name: "valid compression lz4hc",
-			cfg:  ZramConfig{Enabled: true, Size: "ram/2", Compression: "lz4hc"},
+			cfg:  ZramConfig{Enabled: mo.Some(true), Size: mo.Some("ram/2"), Compression: mo.Some("lz4hc")},
 		},
 		{
 			name: "disabled with invalid compression - ok",
-			cfg:  ZramConfig{Enabled: false, Compression: "invalid"},
+			cfg:  ZramConfig{Enabled: mo.Some(false), Compression: mo.Some("invalid")},
 		},
 	}
 
@@ -72,13 +73,23 @@ func TestZramApplierApply(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("no-op when config unchanged", func(t *testing.T) {
-		cfg := ZramConfig{Enabled: true, Size: "ram/2", Compression: "zstd", SwapPriority: 100}
+		cfg := ZramConfig{
+			Enabled:      mo.Some(true),
+			Size:         mo.Some("ram/2"),
+			Compression:  mo.Some("zstd"),
+			SwapPriority: mo.Some(100),
+		}
 		r := mocks.NewMockRunner(t)
 		require.NoError(t, NewZramApplier(cfg, cfg, r).Apply(ctx))
 	})
 
 	t.Run("enabled - passes correct env", func(t *testing.T) {
-		cfg := ZramConfig{Enabled: true, Size: "ram/2", Compression: "zstd", SwapPriority: 100}
+		cfg := ZramConfig{
+			Enabled:      mo.Some(true),
+			Size:         mo.Some("ram/2"),
+			Compression:  mo.Some("zstd"),
+			SwapPriority: mo.Some(100),
+		}
 		r := mocks.NewMockRunner(t)
 		r.EXPECT().
 			Run(ctx, zramHelperBin, []string{"apply"},
@@ -93,8 +104,8 @@ func TestZramApplierApply(t *testing.T) {
 	})
 
 	t.Run("disabled - passes enabled=0", func(t *testing.T) {
-		prev := ZramConfig{Enabled: true, Size: "ram/2"}
-		curr := ZramConfig{Enabled: false}
+		prev := ZramConfig{Enabled: mo.Some(true), Size: mo.Some("ram/2")}
+		curr := ZramConfig{Enabled: mo.Some(false)}
 
 		r := mocks.NewMockRunner(t)
 		r.EXPECT().
@@ -105,7 +116,7 @@ func TestZramApplierApply(t *testing.T) {
 	})
 
 	t.Run("helper error is propagated", func(t *testing.T) {
-		cfg := ZramConfig{Enabled: true, Size: "ram/2"}
+		cfg := ZramConfig{Enabled: mo.Some(true), Size: mo.Some("ram/2")}
 		r := mocks.NewMockRunner(t)
 		r.EXPECT().
 			Run(ctx, zramHelperBin, []string{"apply"}, mock.Anything).
@@ -119,8 +130,18 @@ func TestZramApplierRollback(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("rollback restores previous config", func(t *testing.T) {
-		prev := ZramConfig{Enabled: true, Size: "ram/2", Compression: "lzo", SwapPriority: 50}
-		curr := ZramConfig{Enabled: true, Size: "ram/4", Compression: "zstd", SwapPriority: 100}
+		prev := ZramConfig{
+			Enabled:      mo.Some(true),
+			Size:         mo.Some("ram/2"),
+			Compression:  mo.Some("lzo"),
+			SwapPriority: mo.Some(50),
+		}
+		curr := ZramConfig{
+			Enabled:      mo.Some(true),
+			Size:         mo.Some("ram/4"),
+			Compression:  mo.Some("zstd"),
+			SwapPriority: mo.Some(100),
+		}
 
 		r := mocks.NewMockRunner(t)
 		r.EXPECT().

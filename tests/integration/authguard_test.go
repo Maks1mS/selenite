@@ -16,6 +16,7 @@ import (
 
 	"charm.land/ssh"
 	"charm.land/wish/v2"
+	"github.com/samber/mo"
 	"github.com/stretchr/testify/require"
 	gossh "golang.org/x/crypto/ssh"
 
@@ -25,11 +26,11 @@ import (
 
 func TestAuthGuardBlocksAfterRepeatedFailures(t *testing.T) {
 	g, err := authguard.NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    2,
-		Window:        time.Hour,
-		BanDuration:   time.Hour,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(2),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(time.Hour),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 	g.WithPersistPath(filepath.Join(t.TempDir(), "authguard.json"))
@@ -102,11 +103,11 @@ func TestAuthGuardBlocksAfterRepeatedFailures(t *testing.T) {
 
 func TestAuthGuardAllowsCleanIP(t *testing.T) {
 	g, err := authguard.NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    5,
-		Window:        time.Hour,
-		BanDuration:   time.Hour,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(5),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(time.Hour),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 	g.WithPersistPath(filepath.Join(t.TempDir(), "authguard.json"))

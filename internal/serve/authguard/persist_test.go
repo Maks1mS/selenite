@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samber/mo"
 	"github.com/stretchr/testify/require"
 
 	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
@@ -16,11 +17,11 @@ import (
 
 func TestSaveAndLoad(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    2,
-		Window:        time.Hour,
-		BanDuration:   time.Hour,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(2),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(time.Hour),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 	g.Reset()
@@ -33,11 +34,11 @@ func TestSaveAndLoad(t *testing.T) {
 	require.NoError(t, g.Save())
 
 	g2, err := NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    2,
-		Window:        time.Hour,
-		BanDuration:   time.Hour,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(2),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(time.Hour),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 	g2.WithPersistPath(tmp)
@@ -49,11 +50,11 @@ func TestSaveAndLoad(t *testing.T) {
 
 func TestLoadIgnoresExpired(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    2,
-		Window:        time.Hour,
-		BanDuration:   50 * time.Millisecond,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(2),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(50 * time.Millisecond),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 	g.Reset()
@@ -68,11 +69,11 @@ func TestLoadIgnoresExpired(t *testing.T) {
 	time.Sleep(60 * time.Millisecond)
 
 	g2, err := NewGuard(v1.AuthGuardConfig{
-		Enabled:       true,
-		MaxRetries:    2,
-		Window:        time.Hour,
-		BanDuration:   50 * time.Millisecond,
-		MaxTrackedIPs: 100,
+		Enabled:       mo.Some(true),
+		MaxRetries:    mo.Some(2),
+		Window:        mo.Some(time.Hour),
+		BanDuration:   mo.Some(50 * time.Millisecond),
+		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
 	g2.WithPersistPath(tmp)

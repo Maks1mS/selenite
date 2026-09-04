@@ -8,11 +8,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/goccy/go-yaml"
 )
 
-const configPath = "/var/lib/selenite-controller/machine.yml"
+var configPath = "/var/lib/selenite-controller/machine.yml"
 
 type Store interface {
 	Load() (*MachineConfig, error)
@@ -33,7 +31,7 @@ func (ConfigStore) Load() (*MachineConfig, error) {
 }
 
 func (ConfigStore) Save(cfg *MachineConfig) error {
-	b, err := yaml.Marshal(cfg)
+	b, err := MarshalConfig(cfg)
 	if err != nil {
 		return fmt.Errorf("store marshal: %w", err)
 	}

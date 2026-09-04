@@ -9,11 +9,13 @@ require (
 	charm.land/ssh v0.4.3
 	charm.land/wish/v2 v2.0.3
 	github.com/casbin/casbin/v3 v3.11.0
+	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/goccy/go-yaml v1.19.2
 	github.com/gofrs/flock v0.13.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.20.0
 	github.com/otiai10/copy v1.14.1
+	github.com/samber/mo v1.17.0
 	github.com/stretchr/testify v1.12.1
 	github.com/urfave/cli-docs/v3 v3.1.0
 	github.com/urfave/cli/v3 v3.11.0

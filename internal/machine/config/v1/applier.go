@@ -139,19 +139,19 @@ func (a *AccessApplier) Validate(_ context.Context) error {
 
 func (a *AccessApplier) validateAuthGuard() error {
 	g := a.newParams.AuthGuard
-	if !g.Enabled {
+	if !g.Enabled.OrEmpty() {
 		return nil
 	}
-	if g.MaxRetries < 1 {
+	if g.MaxRetries.OrEmpty() < 1 {
 		return errors.New("auth_guard.max_retries must be at least 1")
 	}
-	if g.Window <= 0 {
+	if g.Window.OrEmpty() <= 0 {
 		return errors.New("auth_guard.window must be positive")
 	}
-	if g.BanDuration <= 0 {
+	if g.BanDuration.OrEmpty() <= 0 {
 		return errors.New("auth_guard.ban_duration must be positive")
 	}
-	if g.MaxTrackedIPs < 1 {
+	if g.MaxTrackedIPs.OrEmpty() < 1 {
 		return errors.New("auth_guard.max_tracked_ips must be at least 1")
 	}
 	return nil
@@ -259,8 +259,12 @@ func (a *NetbirdApplier) Name() string {
 }
 
 func (a *NetbirdApplier) Validate(_ context.Context) error {
-	if a.newParams.Enabled {
-		if a.newParams.SetupKey == "" {
+	if a.newParams.Enabled.OrEmpty() {
+		setupKey, hasSetupKey := a.newParams.SetupKey.Get()
+		if !hasSetupKey {
+			return errors.New("setup_key must be set")
+		}
+		if strings.TrimSpace(setupKey) == "" {
 			return errors.New("setup_key is empty")
 		}
 	}
@@ -277,14 +281,14 @@ func (a *NetbirdApplier) Apply(ctx context.Context) error {
 	}
 	a.backupDone = true
 
-	needsClear := a.newParams.Enabled && a.newParams.SetupKey != a.prevParams.SetupKey
+	needsClear := a.newParams.Enabled.OrEmpty() && a.newParams.SetupKey.OrEmpty() != a.prevParams.SetupKey.OrEmpty()
 	clearState := "0"
 	if needsClear {
 		clearState = "1"
 	}
 
 	enabled := "0"
-	if a.newParams.Enabled {
+	if a.newParams.Enabled.OrEmpty() {
 		enabled = "1"
 	}
 
@@ -293,7 +297,7 @@ func (a *NetbirdApplier) Apply(ctx context.Context) error {
 		netbirdHelperBin,
 		[]string{"apply"},
 		executil.WithEnv("SELENITE_NETBIRD_HELPER_ENABLED", enabled),
-		executil.WithEnv("SELENITE_NETBIRD_HELPER_SETUP_KEY", a.newParams.SetupKey),
+		executil.WithEnv("SELENITE_NETBIRD_HELPER_SETUP_KEY", a.newParams.SetupKey.OrEmpty()),
 		executil.WithEnv("SELENITE_NETBIRD_HELPER_CLEAR_STATE", clearState),
 	); err != nil {
 		return fmt.Errorf("netbird-helper apply: %w", err)
@@ -307,7 +311,7 @@ func (a *NetbirdApplier) Rollback(ctx context.Context) error {
 	}
 
 	enabled := "0"
-	if a.prevParams.Enabled {
+	if a.prevParams.Enabled.OrEmpty() {
 		enabled = "1"
 	}
 
@@ -337,16 +341,16 @@ func (a *MonitoringApplier) Name() string {
 }
 
 func (a *MonitoringApplier) Validate(_ context.Context) error {
-	if !a.newParams.Enabled {
+	if !a.newParams.Enabled.OrEmpty() {
 		return nil
 	}
-	if a.newParams.Prometheus.Enabled && a.newParams.Prometheus.Endpoint == "" {
+	if a.newParams.Prometheus.Enabled.OrEmpty() && a.newParams.Prometheus.Endpoint.OrEmpty() == "" {
 		return errors.New("monitoring.prometheus.endpoint is required when prometheus is enabled")
 	}
-	if a.newParams.Loki.Enabled && a.newParams.Loki.Endpoint == "" {
+	if a.newParams.Loki.Enabled.OrEmpty() && a.newParams.Loki.Endpoint.OrEmpty() == "" {
 		return errors.New("monitoring.loki.endpoint is required when loki is enabled")
 	}
-	if !a.newParams.Prometheus.Enabled && !a.newParams.Loki.Enabled {
+	if !a.newParams.Prometheus.Enabled.OrEmpty() && !a.newParams.Loki.Enabled.OrEmpty() {
 		return errors.New("at least one of monitoring.prometheus or monitoring.loki must be enabled")
 	}
 	return nil
@@ -364,9 +368,9 @@ func (a *MonitoringApplier) Rollback(ctx context.Context) error {
 }
 
 func (a *MonitoringApplier) runHelper(ctx context.Context, p MonitoringConfig) error {
-	enabled := boolEnv(p.Enabled)
-	prometheusEnabled := boolEnv(p.Enabled && p.Prometheus.Enabled)
-	lokiEnabled := boolEnv(p.Enabled && p.Loki.Enabled)
+	enabled := boolEnv(p.Enabled.OrEmpty())
+	prometheusEnabled := boolEnv(p.Enabled.OrEmpty() && p.Prometheus.Enabled.OrEmpty())
+	lokiEnabled := boolEnv(p.Enabled.OrEmpty() && p.Loki.Enabled.OrEmpty())
 
 	if err := a.r.Run(
 		ctx,
@@ -374,13 +378,13 @@ func (a *MonitoringApplier) runHelper(ctx context.Context, p MonitoringConfig) e
 		[]string{"apply"},
 		executil.WithEnv("SELENITE_ALLOY_HELPER_ENABLED", enabled),
 		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_ENABLED", prometheusEnabled),
-		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_ENDPOINT", p.Prometheus.Endpoint),
-		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_USERNAME", p.Prometheus.Auth.Username),
-		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_PASSWORD", p.Prometheus.Auth.Password),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_ENDPOINT", p.Prometheus.Endpoint.OrEmpty()),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_USERNAME", p.Prometheus.Auth.Username.OrEmpty()),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_PROMETHEUS_PASSWORD", p.Prometheus.Auth.Password.OrEmpty()),
 		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_ENABLED", lokiEnabled),
-		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_ENDPOINT", p.Loki.Endpoint),
-		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_USERNAME", p.Loki.Auth.Username),
-		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_PASSWORD", p.Loki.Auth.Password),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_ENDPOINT", p.Loki.Endpoint.OrEmpty()),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_USERNAME", p.Loki.Auth.Username.OrEmpty()),
+		executil.WithEnv("SELENITE_ALLOY_HELPER_LOKI_PASSWORD", p.Loki.Auth.Password.OrEmpty()),
 	); err != nil {
 		return fmt.Errorf("alloy-helper apply: %w", err)
 	}
@@ -400,15 +404,16 @@ func NewZramApplier(newParams, prevParams ZramConfig, r executil.Runner) *ZramAp
 func (a *ZramApplier) Name() string { return "zram" }
 
 func (a *ZramApplier) Validate(_ context.Context) error {
-	if !a.newParams.Enabled {
+	if !a.newParams.Enabled.OrEmpty() {
 		return nil
 	}
-	if a.newParams.Size == "" {
+
+	if a.newParams.Size.OrEmpty() == "" {
 		return errors.New("memory.zram.size is required when enabled")
 	}
 	validCompressions := []string{"zstd", "lzo", "lz4", "lzo-rle", "lz4hc"}
-	if a.newParams.Compression != "" && !slices.Contains(validCompressions, a.newParams.Compression) {
-		return fmt.Errorf("invalid compression algorithm: %s", a.newParams.Compression)
+	if a.newParams.Compression.OrEmpty() != "" && !slices.Contains(validCompressions, a.newParams.Compression.OrEmpty()) {
+		return fmt.Errorf("invalid compression algorithm: %s", a.newParams.Compression.OrEmpty())
 	}
 	return nil
 }
@@ -429,10 +434,10 @@ func (a *ZramApplier) runHelper(ctx context.Context, p ZramConfig) error {
 		ctx,
 		zramHelperBin,
 		[]string{"apply"},
-		executil.WithEnv("SELENITE_ZRAM_ENABLED", boolEnv(p.Enabled)),
-		executil.WithEnv("SELENITE_ZRAM_SIZE", p.Size),
-		executil.WithEnv("SELENITE_ZRAM_COMPRESSION", p.Compression),
-		executil.WithEnv("SELENITE_ZRAM_PRIORITY", fmt.Sprintf("%d", p.SwapPriority)),
+		executil.WithEnv("SELENITE_ZRAM_ENABLED", boolEnv(p.Enabled.OrEmpty())),
+		executil.WithEnv("SELENITE_ZRAM_SIZE", p.Size.OrEmpty()),
+		executil.WithEnv("SELENITE_ZRAM_COMPRESSION", p.Compression.OrEmpty()),
+		executil.WithEnv("SELENITE_ZRAM_PRIORITY", fmt.Sprintf("%d", p.SwapPriority.OrEmpty())),
 	); err != nil {
 		return fmt.Errorf("zram-helper apply: %w", err)
 	}

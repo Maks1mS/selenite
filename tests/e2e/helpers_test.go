@@ -239,8 +239,8 @@ func sshRun(client *gossh.Client, cmd string, opts ...Option) error {
 func mustRunCmdWithStdin(t *testing.T, client *testClient, cmd string, stdin io.Reader) string {
 	t.Helper()
 	var buf strings.Builder
-	err := sshRun(client.ssh, cmd, WithStdin(stdin), WithStdout(&buf))
-	require.NoError(t, err, "command %q\noutput: %s", cmd, buf)
+	err := sshRun(client.ssh, cmd, WithStdin(stdin), WithStdout(&buf), WithStderr(&buf))
+	require.NoError(t, err, "command %q\noutput: %s", cmd, buf.String())
 	return buf.String()
 }
 

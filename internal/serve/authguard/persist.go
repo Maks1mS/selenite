@@ -36,20 +36,20 @@ func (g *Guard) load() error {
 	}
 
 	now := time.Now()
-	cutoff := now.Add(-g.cfg.Window)
+	cutoff := now.Add(-g.cfg.Window.OrEmpty())
 
-	if g.bans == nil && g.cfg.Enabled {
+	if g.bans == nil && g.cfg.Enabled.OrEmpty() {
 		var err error
-		g.bans, err = lru.New[string, time.Time](g.cfg.MaxTrackedIPs)
+		g.bans, err = lru.New[string, time.Time](g.cfg.MaxTrackedIPs.OrEmpty())
 		if err != nil {
 			return fmt.Errorf("authguard load create bans lru: %w", err)
 		}
 	} else if g.bans != nil {
 		g.bans.Purge()
 	}
-	if g.attempts == nil && g.cfg.Enabled {
+	if g.attempts == nil && g.cfg.Enabled.OrEmpty() {
 		var err error
-		g.attempts, err = lru.New[string, []time.Time](g.cfg.MaxTrackedIPs)
+		g.attempts, err = lru.New[string, []time.Time](g.cfg.MaxTrackedIPs.OrEmpty())
 		if err != nil {
 			return fmt.Errorf("authguard load create attempts lru: %w", err)
 		}
@@ -93,7 +93,7 @@ func (g *Guard) save() error {
 	defer lock.Unlock() //nolint:errcheck
 
 	now := time.Now()
-	cutoff := now.Add(-g.cfg.Window)
+	cutoff := now.Add(-g.cfg.Window.OrEmpty())
 	s := snapshot{
 		Bans:     make(map[string]time.Time),
 		Attempts: make(map[string][]time.Time),
