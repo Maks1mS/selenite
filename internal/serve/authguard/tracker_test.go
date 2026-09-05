@@ -25,8 +25,8 @@ func TestGuardBanAndExpire(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(3),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(50 * time.Millisecond),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("50ms"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
@@ -47,8 +47,8 @@ func TestGuardCleanupRemovesStale(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(5),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(time.Hour),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
@@ -65,8 +65,8 @@ func TestGuardCleanupRemovesExpired(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(2),
-		Window:        mo.Some(50 * time.Millisecond),
-		BanDuration:   mo.Some(50 * time.Millisecond),
+		Window:        mo.Some("50ms"),
+		BanDuration:   mo.Some("50ms"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
@@ -90,8 +90,8 @@ func TestGuardLRUEviction(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(5),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(time.Hour),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(2),
 	})
 	require.NoError(t, err)
@@ -108,8 +108,8 @@ func TestGuardMemoryBounded(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(3),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(time.Hour),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
@@ -119,6 +119,6 @@ func TestGuardMemoryBounded(t *testing.T) {
 		_ = g.RecordFailure(ip)
 	}
 
-	require.LessOrEqual(t, g.attempts.Len(), g.cfg.MaxTrackedIPs.OrEmpty())
-	require.LessOrEqual(t, g.bans.Len(), g.cfg.MaxTrackedIPs.OrEmpty())
+	require.LessOrEqual(t, g.attempts.Len(), g.maxTrackedIps)
+	require.LessOrEqual(t, g.bans.Len(), g.maxTrackedIps)
 }

@@ -6,7 +6,6 @@ package v1
 
 import (
 	"testing"
-	"time"
 
 	"github.com/samber/mo"
 	"github.com/stretchr/testify/require"
@@ -49,8 +48,8 @@ memory:
 		g := cfg.Access.AuthGuard
 		require.Equal(t, mo.Some(true), g.Enabled)
 		require.Equal(t, mo.Some(3), g.MaxRetries)
-		require.Equal(t, mo.Some(time.Hour), g.Window)
-		require.Equal(t, mo.Some(24*time.Hour), g.BanDuration)
+		require.Equal(t, mo.Some("1h"), g.Window)
+		require.Equal(t, mo.Some("24h"), g.BanDuration)
 		require.Equal(t, mo.Some(100), g.MaxTrackedIPs)
 	})
 

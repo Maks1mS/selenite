@@ -19,8 +19,8 @@ func TestSaveAndLoad(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(2),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(time.Hour),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
@@ -36,8 +36,8 @@ func TestSaveAndLoad(t *testing.T) {
 	g2, err := NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(2),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(time.Hour),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
@@ -52,8 +52,8 @@ func TestLoadIgnoresExpired(t *testing.T) {
 	g, err := NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(2),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(50 * time.Millisecond),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("50ms"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
@@ -71,8 +71,8 @@ func TestLoadIgnoresExpired(t *testing.T) {
 	g2, err := NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(2),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(50 * time.Millisecond),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("50ms"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)

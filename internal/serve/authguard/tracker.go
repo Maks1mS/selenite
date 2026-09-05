@@ -7,6 +7,7 @@ package authguard
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -16,7 +17,12 @@ import (
 
 // Guard tracks failed authentication attempts per IP and enforces temporary bans.
 type Guard struct {
-	cfg         v1.AuthGuardConfig
+	enabled       bool
+	maxRetries    int
+	window        time.Duration
+	banDuration   time.Duration
+	maxTrackedIps int
+
 	attempts    *lru.Cache[string, []time.Time]
 	bans        *lru.Cache[string, time.Time]
 	persistPath string
@@ -25,21 +31,31 @@ type Guard struct {
 // NewGuard creates a new Guard from config. If persistence file exists, it is loaded.
 func NewGuard(cfg v1.AuthGuardConfig) (*Guard, error) {
 	g := &Guard{
-		cfg:         cfg,
+		enabled:     cfg.Enabled.OrEmpty(),
 		persistPath: persistPath,
 	}
-	if !cfg.Enabled.OrEmpty() {
+	if !g.enabled {
 		return g, nil
 	}
-	if cfg.MaxTrackedIPs.OrEmpty() < 1 {
+	g.maxRetries = cfg.MaxRetries.OrEmpty()
+	g.maxTrackedIps = cfg.MaxTrackedIPs.OrEmpty()
+	if g.maxTrackedIps < 1 {
 		return nil, errors.New("authguard: MaxTrackedIPs must be at least 1")
 	}
 	var err error
-	g.attempts, err = lru.New[string, []time.Time](cfg.MaxTrackedIPs.OrEmpty())
+	g.window, err = time.ParseDuration(cfg.Window.OrEmpty())
+	if err != nil {
+		return nil, fmt.Errorf("authguard: Window is incorrect %w", err)
+	}
+	g.banDuration, err = time.ParseDuration(cfg.BanDuration.OrEmpty())
+	if err != nil {
+		return nil, fmt.Errorf("authguard: BanDuration is incorrect %w", err)
+	}
+	g.attempts, err = lru.New[string, []time.Time](g.maxTrackedIps)
 	if err != nil {
 		return nil, err
 	}
-	g.bans, err = lru.New[string, time.Time](cfg.MaxTrackedIPs.OrEmpty())
+	g.bans, err = lru.New[string, time.Time](g.maxTrackedIps)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +73,7 @@ func (g *Guard) WithPersistPath(path string) *Guard {
 
 // Allow reports whether the IP is permitted to attempt authentication.
 func (g *Guard) Allow(ip string) bool {
-	if !g.cfg.Enabled.OrEmpty() {
+	if !g.enabled {
 		return true
 	}
 	exp, ok := g.bans.Peek(ip)
@@ -74,10 +90,10 @@ func (g *Guard) Allow(ip string) bool {
 // RecordFailure increments the failure counter for the IP.
 // It returns true if the IP has just been banned.
 func (g *Guard) RecordFailure(ip string) (banned bool) {
-	if !g.cfg.Enabled.OrEmpty() {
+	if !g.enabled {
 		return false
 	}
-	cutoff := time.Now().Add(-g.cfg.Window.OrEmpty())
+	cutoff := time.Now().Add(-g.window)
 
 	stamps, _ := g.attempts.Get(ip)
 	var fresh []time.Time
@@ -89,8 +105,8 @@ func (g *Guard) RecordFailure(ip string) (banned bool) {
 	fresh = append(fresh, time.Now())
 	g.attempts.Add(ip, fresh)
 
-	if len(fresh) >= g.cfg.MaxRetries.OrEmpty() {
-		g.bans.Add(ip, time.Now().Add(g.cfg.BanDuration.OrEmpty()))
+	if len(fresh) >= g.maxRetries {
+		g.bans.Add(ip, time.Now().Add(g.banDuration))
 		g.attempts.Remove(ip)
 		_ = g.save()
 		return true
@@ -100,11 +116,11 @@ func (g *Guard) RecordFailure(ip string) (banned bool) {
 
 // Cleanup removes stale attempts and expired bans, then persists state if changed.
 func (g *Guard) Cleanup() {
-	if !g.cfg.Enabled.OrEmpty() {
+	if !g.enabled {
 		return
 	}
 	now := time.Now()
-	cutoff := now.Add(-g.cfg.Window.OrEmpty())
+	cutoff := now.Add(-g.window)
 	changed := false
 
 	for _, ip := range g.attempts.Keys() {
@@ -145,7 +161,7 @@ func (g *Guard) Cleanup() {
 
 // Save persists the current state to disk.
 func (g *Guard) Save() error {
-	if !g.cfg.Enabled.OrEmpty() {
+	if !g.enabled {
 		return nil
 	}
 	return g.save()

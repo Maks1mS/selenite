@@ -28,8 +28,8 @@ func TestAuthGuardBlocksAfterRepeatedFailures(t *testing.T) {
 	g, err := authguard.NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(2),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(time.Hour),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
@@ -105,8 +105,8 @@ func TestAuthGuardAllowsCleanIP(t *testing.T) {
 	g, err := authguard.NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(5),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(time.Hour),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)

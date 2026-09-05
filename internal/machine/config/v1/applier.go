@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"time"
 
 	gossh "golang.org/x/crypto/ssh"
 
@@ -142,13 +143,33 @@ func (a *AccessApplier) validateAuthGuard() error {
 	if !g.Enabled.OrEmpty() {
 		return nil
 	}
-	if g.MaxRetries.OrEmpty() < 1 {
+	maxRetries, hasMaxRetries := g.MaxRetries.Get()
+	if !hasMaxRetries {
+		return errors.New("auth_guard.max_retries must be present")
+	}
+	if maxRetries < 1 {
 		return errors.New("auth_guard.max_retries must be at least 1")
 	}
-	if g.Window.OrEmpty() <= 0 {
+	windowRaw, hasWindow := g.Window.Get()
+	if !hasWindow {
+		return errors.New("auth_guard.window must be present")
+	}
+	window, err := time.ParseDuration(windowRaw)
+	if err != nil {
+		return fmt.Errorf("auth_guard.window: invalid duration: %w", err)
+	}
+	if window <= 0 {
 		return errors.New("auth_guard.window must be positive")
 	}
-	if g.BanDuration.OrEmpty() <= 0 {
+	banDurationRaw, hasBanDuration := g.BanDuration.Get()
+	if !hasBanDuration {
+		return errors.New("auth_guard.ban_duration must be present")
+	}
+	banDuration, err := time.ParseDuration(banDurationRaw)
+	if err != nil {
+		return fmt.Errorf("auth_guard.ban_duration: invalid duration: %w", err)
+	}
+	if banDuration <= 0 {
 		return errors.New("auth_guard.ban_duration must be positive")
 	}
 	if g.MaxTrackedIPs.OrEmpty() < 1 {

@@ -31,11 +31,11 @@ type Role struct {
 }
 
 type AuthGuardConfig struct {
-	Enabled       mo.Option[bool]          `yaml:"enabled,omitempty" json:"enabled,omitempty"`
-	MaxRetries    mo.Option[int]           `yaml:"max_retries,omitempty" json:"max_retries,omitempty"`
-	Window        mo.Option[time.Duration] `yaml:"window,omitempty" json:"window,omitempty"`
-	BanDuration   mo.Option[time.Duration] `yaml:"ban_duration,omitempty" json:"ban_duration,omitempty"`
-	MaxTrackedIPs mo.Option[int]           `yaml:"max_tracked_ips,omitempty" json:"max_tracked_ips,omitempty"`
+	Enabled       mo.Option[bool]   `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	MaxRetries    mo.Option[int]    `yaml:"max_retries,omitempty" json:"max_retries,omitempty"`
+	Window        mo.Option[string] `yaml:"window,omitempty" json:"window,omitempty"`
+	BanDuration   mo.Option[string] `yaml:"ban_duration,omitempty" json:"ban_duration,omitempty"`
+	MaxTrackedIPs mo.Option[int]    `yaml:"max_tracked_ips,omitempty" json:"max_tracked_ips,omitempty"`
 }
 
 type AccessConfig struct {
@@ -176,13 +176,6 @@ func yamlOptionEncodeOptions() []yaml.EncodeOption {
 				return none, nil
 			}
 			return []byte(strconv.Itoa(v)), nil
-		}),
-		yaml.CustomMarshaler(func(o mo.Option[time.Duration]) ([]byte, error) {
-			v, ok := o.Get()
-			if !ok {
-				return none, nil
-			}
-			return []byte(strconv.FormatInt(int64(v), 10)), nil
 		}),
 	}
 }

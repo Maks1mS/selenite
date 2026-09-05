@@ -7,7 +7,6 @@ package serve
 import (
 	"net"
 	"testing"
-	"time"
 
 	"charm.land/ssh"
 	"github.com/samber/mo"
@@ -27,8 +26,8 @@ func TestBanConnCallbackBlocksBannedIP(t *testing.T) {
 	g, err := authguard.NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(2),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(time.Hour),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
@@ -48,8 +47,8 @@ func TestBanConnCallbackAllowsCleanIP(t *testing.T) {
 	g, err := authguard.NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(2),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(time.Hour),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
@@ -65,8 +64,8 @@ func TestPublicKeyAuthWrapperCountsFailures(t *testing.T) {
 	g, err := authguard.NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(2),
-		Window:        mo.Some(time.Hour),
-		BanDuration:   mo.Some(time.Hour),
+		Window:        mo.Some("1h"),
+		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
