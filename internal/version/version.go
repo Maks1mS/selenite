@@ -5,6 +5,7 @@
 package version
 
 var (
+	Name      = "Selenite"
 	Version   = "dev"
 	GitCommit = "unknown"
 )

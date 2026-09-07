@@ -18,6 +18,7 @@ import (
 	"syscall"
 
 	"github.com/goccy/go-yaml"
+	"github.com/tiendc/go-deepcopy"
 
 	"altlinux.space/alt-atomic/selenite/internal/executil"
 	"altlinux.space/alt-atomic/selenite/internal/machine/config/patch"
@@ -297,6 +298,60 @@ func (m *machineManager) ApplyPatch(ctx context.Context, r io.Reader, w io.Write
 	applier := config.NewApplier(cfg, prev, m.runner, m.store)
 	if err := applier.Apply(ctx); err != nil {
 		return fmt.Errorf("apply: %w", err)
+	}
+
+	return nil
+}
+
+func (m *machineManager) DashboardGetNetwork(ctx context.Context, r io.Reader, w io.Writer) error {
+	cfg, err := m.store.Load()
+	if err != nil {
+		return fmt.Errorf("DashboardGetNetwork: load config: %w", err)
+	}
+
+	data := config.MachineConfig{}
+	data.Network = cfg.Network
+
+	b, err := config.MarshalConfig(&data)
+	if err != nil {
+		return fmt.Errorf("show config: marshal: %w", err)
+	}
+	_, _ = w.Write(b)
+
+	return nil
+}
+
+func (m *machineManager) DashboardSetNetwork(ctx context.Context, r io.Reader, w io.Writer) error {
+	prev, err := m.store.Load()
+	if err != nil {
+		return fmt.Errorf("DashboardSetNetwork: load config: %w", err)
+	}
+
+	var buffer bytes.Buffer
+	_, err = buffer.ReadFrom(r)
+	if err != nil {
+		return fmt.Errorf("DashboardSetNetwork: read new config: %w", err)
+	}
+
+	netCfg, err := config.ParseMachineConfig(buffer.Bytes())
+	if err != nil {
+		return fmt.Errorf("DashboardSetNetwork: parse new config: %w", err)
+	}
+
+	var cfg config.MachineConfig
+	err = deepcopy.Copy(&cfg, prev)
+	if err != nil {
+		return fmt.Errorf("DashboardSetNetwork: copy config: %w", err)
+	}
+	cfg.Network = netCfg.Network
+
+	applier := config.NewApplier(&cfg, prev, m.runner, m.store)
+	if err := applier.Apply(ctx); err != nil {
+		return fmt.Errorf("DashboardSetNetwork: apply: %w", err)
+	}
+
+	if err := m.store.Save(&cfg); err != nil {
+		return fmt.Errorf("DashboardSetNetwork: save config: %w", err)
 	}
 
 	return nil

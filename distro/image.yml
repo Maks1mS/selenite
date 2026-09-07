@@ -6,6 +6,12 @@ modules:
       destination: /
       replace: true
 
+  - name: Configure kmscon
+    type: include
+    body:
+      targets:
+        - kmscon.yml
+
   - name: '[HACK] Restore passwd and group'
     type: shell
     body:

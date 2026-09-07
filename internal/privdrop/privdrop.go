@@ -15,7 +15,10 @@ import (
 	"syscall"
 )
 
-const PodmanExecutorUser = "_selenite-podman-executor"
+const (
+	PodmanExecutorUser     = "_selenite-podman-executor"
+	SeleniteControllerUser = "_selenite-controller"
+)
 
 // ToUser drops privileges to the named user.
 func ToUser(username string) (*user.User, error) {

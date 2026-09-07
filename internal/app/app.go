@@ -6,11 +6,14 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/urfave/cli/v3"
 
+	"altlinux.space/alt-atomic/selenite/internal/machine"
+	"altlinux.space/alt-atomic/selenite/internal/privdrop"
 	"altlinux.space/alt-atomic/selenite/internal/serve"
 )
 
@@ -35,6 +38,36 @@ func Run(ctx context.Context) error {
 						Host: c.String("host"),
 						Port: c.Int("port"),
 					})
+				},
+			},
+			{
+				Name:   "_dashboard-set-network",
+				Hidden: true,
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if os.Geteuid() != 0 {
+						return errors.New("must be run as root")
+					}
+
+					if _, err := privdrop.ToUser(privdrop.SeleniteControllerUser); err != nil {
+						return fmt.Errorf("privdrop: %w", err)
+					}
+
+					return machine.New().DashboardSetNetwork(ctx, c.Reader, c.Writer)
+				},
+			},
+			{
+				Name:   "_dashboard-get-network",
+				Hidden: true,
+				Action: func(ctx context.Context, c *cli.Command) error {
+					if os.Geteuid() != 0 {
+						return errors.New("must be run as root")
+					}
+
+					if _, err := privdrop.ToUser(privdrop.SeleniteControllerUser); err != nil {
+						return fmt.Errorf("privdrop: %w", err)
+					}
+
+					return machine.New().DashboardGetNetwork(ctx, c.Reader, c.Writer)
 				},
 			},
 		},

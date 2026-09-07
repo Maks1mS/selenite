@@ -17,6 +17,8 @@ COPY . .
 
 RUN mkdir /out && \
     for cmd in \
+        selenite-dashboard \
+        selenite-dashboard-helper \
         selenite-controller \
         podman-compose-helper \
         podman-secret-helper \
@@ -72,6 +74,16 @@ RUN --mount=from=selenite-controller,source=/out,target=/out \
     do \
         install -o root -g _selenite-controller -m 4750 /out/$cmd /usr/libexec/selenite-controller/$cmd; \
     done
+
+RUN --mount=from=selenite-controller,source=/out,target=/out \
+    for cmd in \
+        selenite-dashboard-helper; \
+    do \
+        install -o root -g _selenite-dashboard -m 4750 /out/$cmd /usr/libexec/selenite-controller/$cmd; \
+    done
+
+RUN --mount=from=selenite-controller,source=/out,target=/out \
+    install -o root -g _selenite-dashboard -m 750 /out/selenite-dashboard /usr/bin/selenite-dashboard
 
 FROM altlinux.space/alt-atomic/sbom-tool:v0.2.0@sha256:7403d01ad02d80c2948944bf30e921d815e7b0843071e76b440eb707c09cbf5d AS sbom
 RUN --mount=type=bind,from=root,source=/,target=/rootfs,rw generate-sbom
