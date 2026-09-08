@@ -1,6 +1,6 @@
 module altlinux.space/alt-atomic/selenite
 
-go 1.25.12
+go 1.26.0
 
 toolchain go1.27.1
 
@@ -26,7 +26,7 @@ require (
 	github.com/urfave/cli-docs/v3 v3.1.0
 	github.com/urfave/cli/v3 v3.11.0
 	go.alt-gnome.ru/x/runner v0.0.0-20260822214201-9ca586100292
-	golang.org/x/crypto v0.55.0
+	golang.org/x/crypto v0.56.0
 )
 
 replace charm.land/huh/v2 => altlinux.space/alt-atomic/charmbracelet-huh/v2 v2.0.4-0.20260831141528-558e59afab4c
