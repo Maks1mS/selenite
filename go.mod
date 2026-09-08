@@ -5,7 +5,7 @@ go 1.25.12
 toolchain go1.27.1
 
 require (
-	charm.land/bubbletea/v2 v2.0.8
+	charm.land/bubbletea/v2 v2.0.9
 	charm.land/huh/v2 v2.0.3
 	charm.land/lipgloss/v2 v2.0.5
 	charm.land/log/v2 v2.0.1
