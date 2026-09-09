@@ -2,11 +2,6 @@
 # RUN apt-get update && apt-get -y install ca-certificates
 FROM golang:1.27.1@sha256:f773aa2679c165b2d4ccf04c1de9ef5f34c0e4fd7008b3c449d4cdc47d83af55 as selenite-controller
 
-ARG VERSION
-ENV VERSION=$VERSION
-ARG GIT_COMMIT
-ENV GIT_COMMIT=$GIT_COMMIT
-
 WORKDIR /app
 
 COPY go.mod go.sum ./
@@ -14,6 +9,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+
+ARG VERSION
+ENV VERSION=$VERSION
+ARG GIT_COMMIT
+ENV GIT_COMMIT=$GIT_COMMIT
 
 RUN mkdir /out && \
     for cmd in \
@@ -42,16 +42,16 @@ RUN mkdir /out && \
 
 FROM altlinux.space/alt-atomic/core-minimal/stable:20260902@sha256:f960c2c938e2f2a223688d3524ac9954cc69167a523476c6962cd8c12b4fd60e as root
 
+RUN --mount=type=bind,source=./distro/base/image.yml,target=/etc/apm/image.yml \
+    --mount=type=bind,source=./distro/base/resources,target=/etc/apm/resources \
+    apm system image build
+
 ARG DEV
 ENV DEV=$DEV
 ARG VERSION
 ENV VERSION=$VERSION
 ARG GIT_COMMIT
 ENV GIT_COMMIT=$GIT_COMMIT
-
-RUN --mount=type=bind,source=./distro/base/image.yml,target=/etc/apm/image.yml \
-    --mount=type=bind,source=./distro/base/resources,target=/etc/apm/resources \
-    apm system image build
 
 RUN --mount=type=bind,source=./distro/image.yml,target=/etc/apm/image.yml \
     --mount=type=bind,source=./distro/resources,target=/etc/apm/resources \

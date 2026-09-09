@@ -48,6 +48,21 @@ modules:
         - selenite-setup.service
       enabled: true
 
+  - name: Set branding
+    type: branding
+    body:
+      release-overrides:
+        ID: "selenite"
+        IMAGE_ID: "selenite"
+        NAME: "Selenite"
+        PRETTY_NAME: "Selenite ${{ Env.VERSION }}"
+        VERSION: "${{ Env.VERSION }}"
+        VERSION_ID: "${{ Env.VERSION }}"
+        VARIANT: "Cloud"
+        VARIANT_ID: "cloud"
+        BUILD_ID: "Selenite ${{ Env.VERSION }}"
+        BUG_REPORT_URL: "https://altlinux.space/alt-atomic/selenite/issues"
+
   - name: Base cleanup
     type: include
     body:
