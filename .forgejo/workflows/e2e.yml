@@ -53,32 +53,6 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Debug env
-        run: |
-          echo "HOME=$HOME"
-          echo "whoami=$(whoami)"
-          go env GOPATH GOMODCACHE
-
-      - name: Install go-task
-        run: |
-          go install github.com/go-task/task/v3/cmd/task@ff3372fc50a47348610d722616f1a073aace0513 # v3.53.1
-          echo "$(go env GOPATH)/bin" >> "$FORGEJO_PATH"
-
-      - name: Install deps
-        run: |
-          apt-get update
-          apt-get install -y \
-            node \
-            make \
-            podman \
-            buildah \
-            buildkit \
-            go-containerregistry-crane \
-            jq \
-            cosign \
-            fuse-overlayfs \
-            qemu-system-x86
-
       - name: Run E2E tests
         run: |
           task test-e2e

@@ -28,6 +28,7 @@ podman build \
     --build-arg DEV=1 \
     --build-arg VERSION="$(git describe --tags 2>/dev/null || git rev-parse --short HEAD)" \
     --build-arg GIT_COMMIT="$(git rev-parse HEAD)" \
+    --cache-from altlinux.space/alt-atomic/selenite-cache \
     "$SCRIPT_DIR/../"
 
 IMAGE_ID=$(podman image inspect --format '{{.Id}}' "$IMAGE_TAG")
