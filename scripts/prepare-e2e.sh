@@ -17,6 +17,11 @@ die()   { echo "ERROR: $*" >&2; exit 1; }
 FORCE="${FORCE:-0}"
 if [[ "${1:-}" == "--force" ]]; then FORCE=1; fi
 
+SUDO=""
+if [[ "$(id -u)" -ne 0 ]]; then
+    SUDO="sudo"
+fi
+
 info "Building image"
 podman build \
     --tag "$IMAGE_TAG" \
@@ -38,13 +43,15 @@ if [[ "$FORCE" != "1" && -f "$WORK_DIR/$DISK_IMAGE" && -f "$CACHE_FILE" ]]; then
     fi
 fi
 
-info "Transferring image to root storage"
-podman save "$IMAGE_TAG" | sudo podman load
+if [[ -n "$SUDO" ]]; then
+    info "Transferring image to root storage"
+    podman save "$IMAGE_TAG" | $SUDO podman load
+fi
 
 info "Installing to disk"
-sudo rm -f "$WORK_DIR/$DISK_IMAGE"
-sudo truncate -s "$DISK_SIZE" "$WORK_DIR/$DISK_IMAGE"
-sudo podman run --rm --privileged --pid=host \
+$SUDO rm -f "$WORK_DIR/$DISK_IMAGE"
+$SUDO truncate -s "$DISK_SIZE" "$WORK_DIR/$DISK_IMAGE"
+$SUDO podman run --rm --privileged --pid=host \
     -v /var/lib/containers:/var/lib/containers \
     -v /dev:/dev \
     --security-opt label=type:unconfined_t \
@@ -58,7 +65,7 @@ sudo podman run --rm --privileged --pid=host \
         --disable-selinux \
         "/output/$DISK_IMAGE"
 
-sudo bash -c "echo \"$CACHE_KEY\" > \"$CACHE_FILE\""
+$SUDO bash -c "echo \"$CACHE_KEY\" > \"$CACHE_FILE\""
 
-sudo chmod 666 "$WORK_DIR/$DISK_IMAGE"
-sudo chmod 666 "$CACHE_FILE"
+$SUDO chmod 666 "$WORK_DIR/$DISK_IMAGE"
+$SUDO chmod 666 "$CACHE_FILE"
