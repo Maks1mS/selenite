@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 	"syscall"
@@ -63,8 +64,10 @@ func main() {
 }
 
 func runReboot(env []string) error {
-	//gosec:disable G204 -- Expected
-	if err := syscall.Exec("/sbin/reboot", []string{"reboot"}, env); err != nil {
+	cmd := exec.Command("systemd-run", "--on-active=3s", "--", "/sbin/reboot")
+	cmd.Env = env
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("reboot: %w", err)
 	}
 	return nil

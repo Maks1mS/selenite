@@ -179,11 +179,11 @@ func (m *machineManager) Info(ctx context.Context, w io.Writer) error {
 }
 
 func (m *machineManager) Reboot(ctx context.Context, w io.Writer) error {
+	_, _ = fmt.Fprintln(w, "Rebooting...")
 	err := m.run(ctx, w, "reboot")
 	if err != nil {
 		return fmt.Errorf("reboot: %w", err)
 	}
-	_, _ = fmt.Fprintln(w, "Rebooting...")
 	return nil
 }
 

@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 IMAGE_TAG="selenite-tmp"
 WORK_DIR="${WORK_DIR:-/var/tmp/selenite}"
 DISK_IMAGE="disk.raw"
-DISK_SIZE="4G"
+DISK_SIZE="5G"
 
 info()  { echo "=== $*"; }
 die()   { echo "ERROR: $*" >&2; exit 1; }

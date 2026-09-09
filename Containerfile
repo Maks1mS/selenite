@@ -40,7 +40,7 @@ RUN mkdir /out && \
             -trimpath -o /out/$cmd ./cmd/$cmd; \
     done
 
-FROM altlinux.space/alt-atomic/core-minimal/stable:20260902@sha256:f960c2c938e2f2a223688d3524ac9954cc69167a523476c6962cd8c12b4fd60e as root
+FROM altlinux.space/alt-atomic/core-minimal/stable:20260909@sha256:af2f18ec09b6aad1a256187e08bc3ab76a3328efa4c72699e96c2f0fe19ada53 as root
 
 RUN --mount=type=bind,source=./distro/base/image.yml,target=/etc/apm/image.yml \
     --mount=type=bind,source=./distro/base/resources,target=/etc/apm/resources \
