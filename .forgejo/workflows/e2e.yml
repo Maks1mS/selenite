@@ -27,9 +27,10 @@ jobs:
       vmid: ${{ steps.runner.outputs.vmid }}
       label: ${{ steps.runner.outputs.label }}
     steps:
-      - name: Provision ephemeral runner
+      - &provision-runner
+        name: Provision ephemeral runner
         id: runner
-        uses: maks1ms/provision-ephemeral-runner-pve@e43e50dfd7cd59be9e8354b19d3bd9407f6108d2
+        uses: maks1ms/provision-ephemeral-runner-pve@a4697cd39a2a98527bdf26af2209f67a654f8a58
         with:
           action: 'create'
           pve_url: ${{ secrets.PVE_HOST }}
@@ -62,9 +63,8 @@ jobs:
     needs: [end-to-end-provision, end-to-end]
     if: always()
     steps:
-      - name: Provision ephemeral runner
-        id: runner
-        uses: maks1ms/provision-ephemeral-runner-pve@main
+      - <<: *provision-runner
+        name: Cleanup ephemeral runner
         with:
           action: 'delete'
           pve_url: ${{ secrets.PVE_HOST }}
