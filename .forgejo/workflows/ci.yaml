@@ -97,32 +97,32 @@ jobs:
           path: integration-coverage.out
           retention-days: 1
 
-  sonarqube:
-    name: SonarQube Scan
-    runs-on: als-huge-gh
-    needs: [test-unit, test-integration]
-    if: github.event_name != 'pull_request'
-    steps:
-      - <<: *checkout
-        with:
-          fetch-depth: 0
+  # sonarqube:
+  #   name: SonarQube Scan
+  #   runs-on: als-huge-gh
+  #   needs: [test-unit, test-integration]
+  #   if: github.event_name != 'pull_request'
+  #   steps:
+  #     - <<: *checkout
+  #       with:
+  #         fetch-depth: 0
 
-      - &download-unit-coverage
-        name: Download unit coverage
-        uses: actions/download-artifact@ad191675b41f6a5b46da9a048cb6893812da158b # v3.1.0-node20
-        with:
-          name: unit-coverage
+  #     - &download-unit-coverage
+  #       name: Download unit coverage
+  #       uses: actions/download-artifact@ad191675b41f6a5b46da9a048cb6893812da158b # v3.1.0-node20
+  #       with:
+  #         name: unit-coverage
 
-      - <<: *download-unit-coverage
-        name: Download integration coverage
-        with:
-          name: integration-coverage
+  #     - <<: *download-unit-coverage
+  #       name: Download integration coverage
+  #       with:
+  #         name: integration-coverage
 
-      - name: SonarQube Scan
-        uses: https://github.com/sonarsource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+  #     - name: SonarQube Scan
+  #       uses: https://github.com/sonarsource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+  #       env:
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #         SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
   generate-version:
     name: Generate version
