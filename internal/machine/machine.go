@@ -18,6 +18,7 @@ import (
 	"syscall"
 
 	"github.com/goccy/go-yaml"
+	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/tiendc/go-deepcopy"
 
 	"altlinux.space/alt-atomic/selenite/internal/executil"
@@ -63,7 +64,7 @@ func (m *machineManager) Stats(_ context.Context, w io.Writer) error {
 		return fmt.Errorf("stats: parse uptime: %w", err)
 	}
 
-	totalMem, availMem, err := readMeminfo()
+	memStat, err := mem.VirtualMemory()
 	if err != nil {
 		return fmt.Errorf("stats: read meminfo: %w", err)
 	}
@@ -79,11 +80,10 @@ func (m *machineManager) Stats(_ context.Context, w io.Writer) error {
 	diskFree := stat.Bfree * uint64(stat.Bsize)
 	diskUsed := diskTotal - diskFree
 
-	usedMem := totalMem - availMem
 	_, _ = fmt.Fprintf(w,
 		"Uptime:   %s\nMemory:   %s / %s used\nDisk:     %s / %s used\n",
 		formatUptime(int(secs)),
-		formatBytes(usedMem), formatBytes(totalMem),
+		formatBytes(memStat.Used), formatBytes(memStat.Total),
 		formatBytes(diskUsed), formatBytes(diskTotal),
 	)
 	return nil
@@ -131,9 +131,14 @@ func (m *machineManager) Info(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("info: cpu: %w", err)
 	}
 
-	totalMem, availMem, err := readMeminfo()
+	memStat, err := mem.VirtualMemory()
 	if err != nil {
 		return fmt.Errorf("info: mem: %w", err)
+	}
+
+	swapStat, err := mem.SwapMemory()
+	if err != nil {
+		return fmt.Errorf("info: swap: %w", err)
 	}
 
 	totalDisk, availDisk, err := readDiskInfo()
@@ -157,7 +162,12 @@ func (m *machineManager) Info(ctx context.Context, w io.Writer) error {
 	img := booted.Image.Status.Booted.Image
 
 	_, _ = fmt.Fprintf(w, "CPU:            %s (%d cores)\n", cpuModel, cpuCores)
-	_, _ = fmt.Fprintf(w, "Memory:         %s / %s\n", formatBytes(totalMem-availMem), formatBytes(totalMem))
+	_, _ = fmt.Fprintf(w, "Memory:         %s / %s\n", formatBytes(memStat.Used), formatBytes(memStat.Total))
+	if swapStat.Total > 0 {
+		_, _ = fmt.Fprintf(w, "Swap:           %s / %s\n", formatBytes(swapStat.Used), formatBytes(swapStat.Total))
+	} else {
+		_, _ = fmt.Fprintf(w, "Swap:           none\n")
+	}
 	_, _ = fmt.Fprintf(w, "Disk:           %s / %s\n", formatBytes(totalDisk-availDisk), formatBytes(totalDisk))
 	_, _ = fmt.Fprintf(w, "Kernel:         %s\n", strings.TrimSpace(string(kernel)))
 	_, _ = fmt.Fprintf(w, "Podman:         %s\n", podmanVer.Version)

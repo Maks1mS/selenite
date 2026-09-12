@@ -57,6 +57,11 @@ func TestZramConfig(t *testing.T) {
 		mustRunCmdWithStdin(t, client, "machine config apply", strings.NewReader(cfg))
 	})
 
+	run(t, "'machine info' shows no swap before zram is enabled", func(t *testing.T) {
+		out := mustRunCmd(t, client, "machine info")
+		assert.Contains(t, out, "Swap:           none")
+	})
+
 	run(t, "apply enables zram and writes generator config", func(t *testing.T) {
 		cfg := zramConfig(client, `  zram:
     enabled: true
@@ -84,6 +89,12 @@ func TestZramConfig(t *testing.T) {
 		out, err := runPtyCmd(t, client.ssh, "debug busybox -- cat /host/proc/swaps")
 		require.NoError(t, err)
 		assert.Contains(t, out, "/dev/zram0")
+	})
+
+	run(t, "'machine info' shows swap after zram is enabled", func(t *testing.T) {
+		out := mustRunCmd(t, client, "machine info")
+		assert.Contains(t, out, "Swap:")
+		assert.NotContains(t, out, "Swap:           none")
 	})
 
 	run(t, "re-apply with different parameters updates config", func(t *testing.T) {
@@ -121,5 +132,8 @@ func TestZramConfig(t *testing.T) {
 		out, err = runPtyCmd(t, client.ssh, "debug busybox -- cat /host/proc/swaps")
 		require.NoError(t, err)
 		assert.NotContains(t, out, "zram0")
+
+		info := mustRunCmd(t, client, "machine info")
+		assert.Contains(t, info, "Swap:           none")
 	})
 }

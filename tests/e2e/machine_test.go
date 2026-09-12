@@ -53,7 +53,9 @@ func TestMachine(t *testing.T) {
 	client := bootVMWithProvison(t)
 
 	run(t, "'machine info' works", func(t *testing.T) {
-		mustRunCmd(t, client, "machine info")
+		out := mustRunCmd(t, client, "machine info")
+		assert.Contains(t, out, "Memory:")
+		assert.Contains(t, out, "Swap:")
 	})
 
 	run(t, "'machine config show' shows config after provision", func(t *testing.T) {

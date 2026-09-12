@@ -89,37 +89,6 @@ func readCPUInfo() (model string, cores int, err error) {
 	return model, cores, nil
 }
 
-func readMeminfo() (totalBytes, availBytes uint64, err error) {
-	f, err := os.Open("/proc/meminfo")
-	if err != nil {
-		return 0, 0, fmt.Errorf("read /proc/meminfo: %w", err)
-	}
-	defer func() {
-		_ = f.Close()
-	}()
-
-	var totalKB, availKB uint64
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		var key string
-		var val uint64
-		if _, err := fmt.Sscanf(line, "%s %d kB", &key, &val); err != nil {
-			continue
-		}
-		switch key {
-		case "MemTotal:":
-			totalKB = val
-		case "MemAvailable:":
-			availKB = val
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return 0, 0, fmt.Errorf("scanner: %w", err)
-	}
-	return totalKB * 1024, availKB * 1024, nil
-}
-
 func readDiskInfo() (diskTotal, diskFree uint64, err error) {
 	var stat syscall.Statfs_t
 	if err := syscall.Statfs("/var", &stat); err != nil {
