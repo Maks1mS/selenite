@@ -5,7 +5,7 @@
 
 <p align="center">
   Минималистичная иммутабельная серверная ОС для контейнеров.
-  <br>Построена на базе <a href="http://atomic.alt-gnome.ru">ALT Atomic</a>.
+  <br>Построена на базе <a href="https://alt-atomic.org">ALT Atomic</a>.
 </p>
 
 <!-- [![Quality Gate Status](https://sonar.alt-gnome.ru/api/project_badges/measure?project=selenite&metric=alert_status&token=sqb_425aa0aae9e5551e87bc53bf1881858654f327ca)](https://sonar.alt-gnome.ru/dashboard?id=selenite) -->
