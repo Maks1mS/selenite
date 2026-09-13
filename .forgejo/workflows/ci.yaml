@@ -152,8 +152,17 @@ jobs:
     container:
       image: altlinux.space/alt-atomic/builder-image:sisyphus
 
+    enable-openid-connect: true
+
     steps:
       - *checkout
+
+      - &get-jwt
+        name: Get JWT
+        id: jwt
+        uses: alt-atomic/actions/get-oidc-jwt@0b93dfe7ce3670b45ca16ceb1d8fd55ee080c276
+        with:
+          aud: "u:776:cdd6fb48-aeb1-4f4f-b02d-9add5837ea6a"
 
       - name: Compute podman extra args
         id: podman_args
@@ -189,7 +198,7 @@ jobs:
             org.alt-atomic.installer.custom-preset=selenite
 
           push-enabled: ${{ forgejo.ref == 'refs/heads/main' }}
-          registry-password: ${{ secrets.REGISTRY_TOKEN }}
+          registry-password: ${{ steps.jwt.outputs.jwt }}
           cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
           cosign-password: ${{ secrets.COSIGN_PASSWORD }}
 
@@ -202,20 +211,24 @@ jobs:
     container:
       image: altlinux.space/alt-atomic/builder-image:sisyphus
 
+    enable-openid-connect: true
+
     steps:
-    - name: Create manifest
-      uses: alt-atomic/actions/create-manifest@e835eedfc64536d16df2a43259d034c5cb25e8ce
-      with:
-          registry: ${{ env.REGISTRY }}
-          registry-username: "<token>"
-          registry-password: ${{ secrets.REGISTRY_TOKEN }}
+      - *get-jwt
 
-          image-name: alt-atomic/selenite/cloud
-          image-wildcard: ${{ format('{0}/alt-atomic/selenite/cloud/@ARCH@:{1}', env.REGISTRY, needs.generate-version.outputs.version) }}
-          arch-tags: amd64
+      - name: Create manifest
+        uses: alt-atomic/actions/create-manifest@e835eedfc64536d16df2a43259d034c5cb25e8ce
+        with:
+            registry: ${{ env.REGISTRY }}
+            registry-username: "<token>"
+            registry-password: ${{ steps.jwt.outputs.jwt }}
 
-          image-tag: ${{ needs.generate-version.outputs.version }}
-          image-aliases: nightly
+            image-name: alt-atomic/selenite/cloud
+            image-wildcard: ${{ format('{0}/alt-atomic/selenite/cloud/@ARCH@:{1}', env.REGISTRY, needs.generate-version.outputs.version) }}
+            arch-tags: amd64
 
-          cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
-          cosign-password: ${{ secrets.COSIGN_PASSWORD }}
+            image-tag: ${{ needs.generate-version.outputs.version }}
+            image-aliases: nightly
+
+            cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
+            cosign-password: ${{ secrets.COSIGN_PASSWORD }}
