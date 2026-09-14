@@ -1,0 +1,32 @@
+on:
+  pull_request_target:
+    types:
+      - closed
+      - labeled
+
+jobs:
+  backporting:
+    if: forgejo.event.pull_request.merged && contains(toJSON(forgejo.event.pull_request.labels), 'backport/v')
+    runs-on: als-huge-gh
+
+    enable-openid-connect: true
+
+    steps:
+      - name: Get JWT
+        id: jwt
+        uses: alt-atomic/actions/get-oidc-jwt@0b93dfe7ce3670b45ca16ceb1d8fd55ee080c276
+        with:
+          aud: "u:776:c4f88c37-aefc-4418-b429-9fc3240c39d0"
+
+      - uses: actions/git-backporting@17bab14ff4b362d044e12c18e491b4ef8e69a4b1 # v4.10.0
+        with:
+          target-branch-pattern: "^backport/(?<target>release-.*)$"
+          strategy: ort
+          strategy-option: find-renames
+          cherry-pick-options: -x
+          auth: ${{ steps.jwt.outputs.jwt }}
+          pull-request: ${{ forgejo.event.pull_request.url }}
+          auto-no-squash: true
+          enable-err-notification: true
+          git-user: alt-atomic-bot
+          git-email: alt-atomic-bot@noreply.altlinux.space
