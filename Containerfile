@@ -1,13 +1,13 @@
-# FROM registry.altlinux.org/sisyphus/golang:1.25.6@sha256:6e7d2dca3fa4dcd06f8896af7a081c8608b38d82cf4115d9852f14e137a78989 as selenite-controller
-# RUN apt-get update && apt-get -y install ca-certificates
-FROM golang:1.27.1@sha256:f773aa2679c165b2d4ccf04c1de9ef5f34c0e4fd7008b3c449d4cdc47d83af55 as selenite-controller
+FROM altlinux.space/alt-atomic/core-minimal/stable:20260909@sha256:af2f18ec09b6aad1a256187e08bc3ab76a3328efa4c72699e96c2f0fe19ada53 as base
+
+FROM base as builder
+
+RUN apm s install go-task golang gcc libsystemd-devel
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
-
 RUN go mod download
-
 COPY . .
 
 ARG VERSION
@@ -15,32 +15,9 @@ ENV VERSION=$VERSION
 ARG GIT_COMMIT
 ENV GIT_COMMIT=$GIT_COMMIT
 
-RUN mkdir /out && \
-    for cmd in \
-        selenite-dashboard \
-        selenite-dashboard-helper \
-        selenite-controller \
-        podman-compose-helper \
-        podman-secret-helper \
-        podman-volume-helper \
-        podman-network-helper \
-        selenite-machine-helper \
-        sysctl-helper \
-        netbird-helper \
-        alloy-helper \
-        nmstate-helper \
-        debug-helper \
-        zram-helper; \
-    do \
-        CGO_ENABLED=1 \
-        GOOS=linux \
-        go build -ldflags="-s -w \
-            -X altlinux.space/alt-atomic/selenite/internal/version.Version=$VERSION \
-            -X altlinux.space/alt-atomic/selenite/internal/version.GitCommit=$GIT_COMMIT" \
-            -trimpath -o /out/$cmd ./cmd/$cmd; \
-    done
+RUN task dist DESTDIR=/out VERSION=$VERSION GIT_COMMIT=$GIT_COMMIT
 
-FROM altlinux.space/alt-atomic/core-minimal/stable:20260909@sha256:af2f18ec09b6aad1a256187e08bc3ab76a3328efa4c72699e96c2f0fe19ada53 as root
+FROM base as root
 
 RUN --mount=type=bind,source=./distro/base/image.yml,target=/etc/apm/image.yml \
     --mount=type=bind,source=./distro/base/resources,target=/etc/apm/resources \
@@ -57,33 +34,13 @@ RUN --mount=type=bind,source=./distro/image.yml,target=/etc/apm/image.yml \
     --mount=type=bind,source=./distro/resources,target=/etc/apm/resources \
     apm system image build
 
-COPY --from=selenite-controller /out/selenite-controller /usr/bin/selenite-controller
-RUN --mount=from=selenite-controller,source=/out,target=/out \
-    for cmd in \
-        podman-compose-helper \
-        podman-secret-helper \
-        podman-volume-helper \
-        podman-network-helper \
-        selenite-machine-helper \
-        sysctl-helper \
-        netbird-helper \
-        alloy-helper \
-        nmstate-helper \
-        debug-helper \
-        zram-helper; \
-    do \
-        install -o root -g _selenite-controller -m 4750 /out/$cmd /usr/libexec/selenite-controller/$cmd; \
-    done
+COPY --from=builder /out/ /
 
-RUN --mount=from=selenite-controller,source=/out,target=/out \
-    for cmd in \
-        selenite-dashboard-helper; \
-    do \
-        install -o root -g _selenite-dashboard -m 4750 /out/$cmd /usr/libexec/selenite-controller/$cmd; \
-    done
-
-RUN --mount=from=selenite-controller,source=/out,target=/out \
-    install -o root -g _selenite-dashboard -m 750 /out/selenite-dashboard /usr/bin/selenite-dashboard
+RUN chown root:_selenite-controller /usr/libexec/selenite-controller/* && \
+    chown root:_selenite-dashboard /usr/libexec/selenite-controller/selenite-dashboard-helper && \
+    chown root:_selenite-dashboard /usr/bin/selenite-dashboard && \
+    chmod 4750 /usr/libexec/selenite-controller/* && \
+    chmod 750 /usr/bin/selenite-dashboard
 
 FROM altlinux.space/alt-atomic/sbom-tool:v0.2.0@sha256:7403d01ad02d80c2948944bf30e921d815e7b0843071e76b440eb707c09cbf5d AS sbom
 RUN --mount=type=bind,from=root,source=/,target=/rootfs,rw generate-sbom

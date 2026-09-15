@@ -9,6 +9,27 @@ vars:
   ALLOWED_LICENSES: MIT,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,MPL-2.0,MPL-2.0-no-copyleft-exception
   ADDLICENSE_IGNORE: "-ignore=vendor/** -ignore=.git/** -ignore=**/*.yml -ignore=**/*.yaml -ignore=scripts/trivy-to-sonar.py"
   MOCKERY_BIN: go run github.com/vektra/mockery/v3@061811d8857c652c7241910d3ba4e8a01dda55ff # v3.7.0
+  VERSION: '{{.VERSION | default "dev"}}'
+  GIT_COMMIT: '{{.GIT_COMMIT | default "unknown"}}'
+  LDFLAGS: >-
+    -s -w
+    -X altlinux.space/alt-atomic/selenite/internal/version.Version={{.VERSION}}
+    -X altlinux.space/alt-atomic/selenite/internal/version.GitCommit={{.GIT_COMMIT}}
+  BINARIES:
+    - selenite-controller:usr/bin/selenite-controller
+    - selenite-dashboard:usr/bin/selenite-dashboard
+    - selenite-dashboard-helper:usr/libexec/selenite-controller/selenite-dashboard-helper
+    - podman-compose-helper:usr/libexec/selenite-controller/podman-compose-helper
+    - podman-secret-helper:usr/libexec/selenite-controller/podman-secret-helper
+    - podman-volume-helper:usr/libexec/selenite-controller/podman-volume-helper
+    - podman-network-helper:usr/libexec/selenite-controller/podman-network-helper
+    - selenite-machine-helper:usr/libexec/selenite-controller/selenite-machine-helper
+    - sysctl-helper:usr/libexec/selenite-controller/sysctl-helper
+    - netbird-helper:usr/libexec/selenite-controller/netbird-helper
+    - alloy-helper:usr/libexec/selenite-controller/alloy-helper
+    - nmstate-helper:usr/libexec/selenite-controller/nmstate-helper
+    - debug-helper:usr/libexec/selenite-controller/debug-helper
+    - zram-helper:usr/libexec/selenite-controller/zram-helper
 
 includes:
   dev:
@@ -16,6 +37,21 @@ includes:
     dir: .
 
 tasks:
+  dist:
+    desc: "Build all binaries into DESTDIR, preserving final image layout"
+    vars:
+      DESTDIR: '{{.DESTDIR | default "/out"}}'
+    cmds:
+      - for: {var: BINARIES}
+        cmd: |
+          ITEM="{{.ITEM}}"
+          bin="${ITEM%%:*}"
+          dest="{{.DESTDIR}}/${ITEM#*:}"
+          mkdir -p "$(dirname "$dest")"
+          CGO_ENABLED=1 GOOS=linux go build \
+            -ldflags="{{.LDFLAGS}}" \
+            -trimpath -o "$dest" ./cmd/$bin
+
   fmt:
     desc: "Run golangci-lint with auto-fix"
     cmds:
