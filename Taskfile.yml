@@ -89,9 +89,10 @@ tasks:
     desc: "Run e2e tests"
     vars:
       E2E_PARALLELISM: '4'
+      TEST_FILTER: '{{if .TESTS}}-run {{.TESTS}}{{end}}'
     cmds:
       - "./scripts/prepare-e2e.sh"
-      - go test -tags=e2e -timeout 10m -count=1 -p {{.E2E_PARALLELISM}} -v ./tests/e2e/
+      - go test -tags=e2e -timeout 10m -count=1 -p {{.E2E_PARALLELISM}} -v {{.TEST_FILTER}} ./tests/e2e/
 
   license-headers:
     desc: "Check that all source files have the MPL-2.0 header"
