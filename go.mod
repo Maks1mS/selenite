@@ -24,7 +24,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/tiendc/go-deepcopy v1.7.2
 	github.com/urfave/cli-docs/v3 v3.1.0
-	github.com/urfave/cli/v3 v3.11.0
+	github.com/urfave/cli/v3 v3.12.0
 	go.alt-gnome.ru/x/runner v0.0.0-20260822214201-9ca586100292
 	golang.org/x/crypto v0.57.0
 )
