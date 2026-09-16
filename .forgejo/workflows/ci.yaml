@@ -160,7 +160,7 @@ jobs:
       - &get-jwt
         name: Get JWT
         id: jwt
-        uses: alt-atomic/actions/get-oidc-jwt@0b93dfe7ce3670b45ca16ceb1d8fd55ee080c276
+        uses: alt-atomic/actions/get-oidc-jwt@f70b96057689bebf38313f3465bcb32759d6b9de
         with:
           aud: "u:776:cdd6fb48-aeb1-4f4f-b02d-9add5837ea6a"
 
