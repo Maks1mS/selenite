@@ -45,7 +45,6 @@ modules:
     body:
       targets:
         - selenite-controller.service
-        - selenite-setup.service
       enabled: true
 
   - name: Set branding

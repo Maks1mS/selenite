@@ -57,8 +57,6 @@ func TestPodmanStoragePermissions(t *testing.T) {
 	run(t, "stack healthy after reboot", func(t *testing.T) {
 		client.reconnect(t, 120*time.Second)
 		time.Sleep(2 * time.Second)
-		mustRunCmd(t, client, "stack up "+stackName)
-		time.Sleep(2 * time.Second)
 		out := mustRunCmd(t, client, "stack ps "+stackName)
 		assert.Contains(t, out, "(healthy)")
 	})

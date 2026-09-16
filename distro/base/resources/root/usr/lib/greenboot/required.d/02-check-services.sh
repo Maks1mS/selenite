@@ -19,21 +19,7 @@ check_active() {
     fi
 }
 
-check_not_failed() {
-    local unit="$1"
-    local state
-    state=$(systemctl is-failed "$unit" 2>/dev/null || true)
-    if [ "$state" = "failed" ]; then
-        echo "FAIL: ${unit} is in failed state"
-        FAILED=1
-    else
-        echo "OK: ${unit} is not failed (${state})"
-    fi
-}
-
 check_active selenite-controller.service
-# selenite-setup runs only on first boot, so we only verify it hasn't failed
-check_not_failed selenite-setup.service
 
 if [ "$FAILED" -ne 0 ]; then
     exit 1

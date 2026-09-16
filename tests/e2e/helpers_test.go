@@ -153,8 +153,8 @@ func deployStack(t *testing.T, client *gossh.Client, name, composeYAML string) (
 // mustDeployStack fatals if deploy fails.
 func mustDeployStack(t *testing.T, client *testClient, name, composeYAML string) {
 	t.Helper()
-	_, err := deployStack(t, client.ssh, name, composeYAML)
-	require.NoError(t, err, "stack deploy %q", name)
+	out, err := deployStack(t, client.ssh, name, composeYAML)
+	require.NoError(t, err, "stack deploy %q (out: %q)", name, out)
 }
 
 func runCmdWithStdin(t *testing.T, client *gossh.Client, cmd string, stdin io.Reader) (string, error) {
@@ -257,4 +257,19 @@ func bootVMWithProvison(t *testing.T) *testClient {
 	client := bootVM(t)
 	provision(t, client)
 	return client
+}
+
+func waitStackRunning(t *testing.T, client *testClient, stackName string) {
+	t.Helper()
+	deadline := time.Now().Add(90 * time.Second)
+	for {
+		out, err := runCmdWithStdin(t, client.ssh, "stack ps "+stackName, nil)
+		if err == nil && strings.Contains(out, "Up ") {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("stack %q did not come up in time\nlast output: %s\nlast error: %v", stackName, out, err)
+		}
+		time.Sleep(2 * time.Second)
+	}
 }
