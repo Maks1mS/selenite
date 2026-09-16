@@ -198,7 +198,7 @@ jobs:
             org.alt-atomic.installer.custom-preset=selenite
 
           push-enabled: ${{ forgejo.ref == 'refs/heads/main' }}
-          registry-password: ${{ steps.jwt.outputs.jwt }}
+          registry-password: ${{ case(forgejo.ref == 'refs/heads/main', steps.jwt.outputs.jwt, '') }}
           cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
           cosign-password: ${{ secrets.COSIGN_PASSWORD }}
 

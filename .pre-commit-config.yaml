@@ -7,7 +7,7 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://code.forgejo.org/forgejo/runner
-    rev: bbac773579d5f93ffe0c266a114d7312daab146a # v12.10.2
+    rev: 4140a19a2e1d1d865bbe5b9e7ee13e00c8c5f6a9 # v12.13.2
     hooks:
       - id: forgejo-runner-validate
   - repo: local
