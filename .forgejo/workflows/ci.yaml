@@ -14,7 +14,7 @@ env:
 jobs:
   checks:
     name: Checks
-    runs-on: als-huge-gh
+    runs-on: als-huge
 
     container:
       image: altlinux.space/actions/runner/python:sisyphus
@@ -44,6 +44,10 @@ jobs:
 
       - run: pip install pre-commit
 
+      - &install-deps
+        name: Install deps
+        run: apt-get update && apt-get install -y libsystemd-devel
+
       - &install-go-task
         name: Install go-task
         run: |
@@ -63,6 +67,8 @@ jobs:
       - *setup-go
 
       - *install-go-task
+
+      - *install-deps
 
       - name: Run tests
         run: task test-unit-coverage
@@ -86,6 +92,8 @@ jobs:
       - *setup-go
 
       - *install-go-task
+
+      - *install-deps
 
       - name: Run tests
         run: task test-integration-coverage

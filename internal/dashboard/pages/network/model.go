@@ -20,6 +20,7 @@ import (
 	"go.alt-gnome.ru/x/runner"
 
 	"altlinux.space/alt-atomic/selenite/internal/dashboard/pages/base"
+	"altlinux.space/alt-atomic/selenite/internal/nmstate"
 )
 
 const (
@@ -52,7 +53,7 @@ type page struct {
 	width, height int
 	err           error
 
-	ifaces        map[string]Interface
+	ifaces        map[string]nmstate.Interface
 	currentConfig string
 
 	formData FormData
@@ -144,8 +145,8 @@ func (m *page) applyConfig() error {
 	return nil
 }
 
-func (m *page) buildConfig() (SeleniteConfig, error) {
-	state := DesiredState{}
+func (m *page) buildConfig() (nmstate.SeleniteConfig, error) {
+	state := nmstate.DesiredState{}
 
 	input := FormDataNormalized{}
 	input.Hostname = m.formData.Hostname
@@ -158,7 +159,7 @@ func (m *page) buildConfig() (SeleniteConfig, error) {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	err := validate.Struct(input)
 	if err != nil {
-		return SeleniteConfig{}, fmt.Errorf("validate error: %w", err)
+		return nmstate.SeleniteConfig{}, fmt.Errorf("validate error: %w", err)
 	}
 
 	if input.Hostname != "" {
@@ -168,19 +169,19 @@ func (m *page) buildConfig() (SeleniteConfig, error) {
 		state.DNSResolver.Config.Server = input.Dns
 	}
 	if input.InterfaceName != interfaceNone {
-		iface := Interface{
+		iface := nmstate.Interface{
 			Name:  input.InterfaceName,
 			Type:  m.ifaces[input.InterfaceName].Type,
 			State: "up",
-			Ipv4:  Ipv4{Enabled: true},
+			Ipv4:  nmstate.Ipv4{Enabled: true},
 		}
 
 		switch input.Kind {
 		case kindDHCP:
 			iface.Ipv4.Dhcp = true
 		case kindStatic:
-			iface.Ipv4.Address = []Address{}
-			iface.Ipv6.Address = []Address{}
+			iface.Ipv4.Address = []nmstate.Address{}
+			iface.Ipv6.Address = []nmstate.Address{}
 
 			for _, addr := range input.Address {
 				ipAddr, ipNet, err := net.ParseCIDR(addr)
@@ -190,7 +191,7 @@ func (m *page) buildConfig() (SeleniteConfig, error) {
 
 				prefixLength, _ := ipNet.Mask.Size()
 
-				address := Address{
+				address := nmstate.Address{
 					IP:           ipAddr.String(),
 					PrefixLength: prefixLength,
 				}
@@ -201,7 +202,7 @@ func (m *page) buildConfig() (SeleniteConfig, error) {
 					iface.Ipv6.Address = append(iface.Ipv6.Address, address)
 				}
 			}
-			state.Routes.Config = []RoutesConfig{
+			state.Routes.Config = []nmstate.RoutesConfig{
 				{
 					Destination:      "0.0.0.0/0",
 					NextHopAddress:   input.Gateway,
@@ -210,10 +211,10 @@ func (m *page) buildConfig() (SeleniteConfig, error) {
 			}
 		}
 
-		state.Interfaces = []Interface{iface}
+		state.Interfaces = []nmstate.Interface{iface}
 	}
 
-	return SeleniteConfig{Network: NetworkConfig{state}}, nil
+	return nmstate.SeleniteConfig{Network: nmstate.NetworkConfig{DesiredState: state}}, nil
 }
 
 func (m *page) buildConfigString() (string, error) {
@@ -357,7 +358,7 @@ func newNetworkForm(m *page) *huh.Form {
 		WithShowHelp(false)
 }
 
-func (m *page) listInterfaces() map[string]Interface {
+func (m *page) listInterfaces() map[string]nmstate.Interface {
 	r := runner.NewLocal()
 
 	var b bytes.Buffer
@@ -366,13 +367,13 @@ func (m *page) listInterfaces() map[string]Interface {
 		return nil
 	}
 
-	var s DesiredState
+	var s nmstate.DesiredState
 	m.err = yaml.Unmarshal(b.Bytes(), &s)
 	if m.err != nil {
 		return nil
 	}
 
-	data := map[string]Interface{}
+	data := map[string]nmstate.Interface{}
 	for _, i := range s.Interfaces {
 		if slices.Contains([]string{"linux-bridge", "loopback", "tun", "veth"}, i.Type) {
 			continue

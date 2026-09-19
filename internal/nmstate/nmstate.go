@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package network
+package nmstate
 
 type SeleniteConfig struct {
 	Network NetworkConfig `yaml:"network,omitempty"`
@@ -24,7 +24,8 @@ type Hostname struct {
 }
 
 type DNSResolver struct {
-	Config DNSResolverConfig `yaml:"config,omitempty"`
+	Running DNSResolverConfig `yaml:"running,omitempty"`
+	Config  DNSResolverConfig `yaml:"config,omitempty"`
 }
 
 type DNSResolverConfig struct {

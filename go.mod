@@ -5,6 +5,7 @@ go 1.26.8
 toolchain go1.27.1
 
 require (
+	charm.land/bubbles/v2 v2.1.1
 	charm.land/bubbletea/v2 v2.0.9
 	charm.land/huh/v2 v2.0.3
 	charm.land/lipgloss/v2 v2.0.6
@@ -12,6 +13,8 @@ require (
 	charm.land/ssh v0.4.3
 	charm.land/wish/v2 v2.0.4
 	github.com/casbin/casbin/v3 v3.11.0
+	github.com/charmbracelet/x/ansi v0.11.8
+	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/go-playground/validator/v10 v10.30.4
 	github.com/goccy/go-yaml v1.19.2
@@ -32,7 +35,6 @@ require (
 replace charm.land/huh/v2 => altlinux.space/alt-atomic/charmbracelet-huh/v2 v2.0.4-0.20260831141528-558e59afab4c
 
 require (
-	charm.land/bubbles/v2 v2.1.1 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.10.0 // indirect
@@ -41,7 +43,6 @@ require (
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/keygen v0.5.4 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260906173415-0277a179edd9 // indirect
-	github.com/charmbracelet/x/ansi v0.11.8 // indirect
 	github.com/charmbracelet/x/conpty v0.2.0 // indirect
 	github.com/charmbracelet/x/exp/ordered v0.1.0 // indirect
 	github.com/charmbracelet/x/exp/strings v0.1.0 // indirect
