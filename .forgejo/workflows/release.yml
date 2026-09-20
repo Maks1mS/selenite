@@ -2,25 +2,45 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'      # v1.0.0
-      - 'v[0-9]+.[0-9]+.[0-9]+-*'    # v1.0.0-rc.1, v1.0.0-dev, ...
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'    # v1.0.0-rc.1, ...
+      - '!v[0-9]+.[0-9]+.[0-9]+-dev' # exclude v1.0.0-dev
 
 jobs:
+  meta:
+    runs-on: als-tiny
+    outputs:
+      prerelease: ${{ steps.m.outputs.prerelease }}
+      image_aliases: ${{ steps.m.outputs.image_aliases }}
+    steps:
+      - name: detect prerelease and aliases
+        id: m
+        run: |
+          if [[ "${FORGEJO_REF_NAME}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "prerelease=false" >> "$FORGEJO_OUTPUT"
+            echo "image_aliases=v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}" >> "$FORGEJO_OUTPUT"
+          else
+            echo "prerelease=true" >> "$FORGEJO_OUTPUT"
+            echo "image_aliases=" >> "$FORGEJO_OUTPUT"
+          fi
+
+  build:
+    needs: meta
+    uses: ./.forgejo/workflows/reusable-build.yml
+    secrets: inherit
+    with:
+      version: ${{ forgejo.ref_name }}
+      git_commit: ${{ forgejo.sha }}
+      git_ref: ${{ forgejo.ref }}
+      image_aliases: ${{ needs.meta.outputs.image_aliases }}
+      push: true
+
   release:
-    if: ${{ !contains(forgejo.ref_name, '-dev') }}
+    needs: [meta, build]
     runs-on: als-tiny
     enable-openid-connect: true
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-
-      - name: detect prerelease
-        id: pre
-        run: |
-          if [[ "${FORGEJO_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-.+ ]]; then
-            echo "value=true" >> "$FORGEJO_OUTPUT"
-          else
-            echo "value=false" >> "$FORGEJO_OUTPUT"
-          fi
 
       - name: Get JWT
         id: jwt
