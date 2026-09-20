@@ -25,8 +25,8 @@ For more details, visit [seleniteos.ru](https://seleniteos.ru).
 
 ### Requirements
 
-- RAM: 256 MB
-- Disk: 4 GB
+- RAM: 384 MB
+- Disk: 5 GB
 
 ### Documentation
 

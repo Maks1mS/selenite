@@ -23,7 +23,7 @@ func TestPodmanRestartAlways(t *testing.T) {
 	const stackName = "restart-always"
 	const stack = `services:
   test:
-    image: docker.io/library/busybox:latest
+    image: registry.altlinux.org/sisyphus/distroless-toybox:latest
     command: sh -c 'echo start-log-test && while true; do date; sleep 1; done'
     restart: always
 `
