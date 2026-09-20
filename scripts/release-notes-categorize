@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+"""Categorize release note lines for selenite."""
+
+import json
+import re
+import sys
+
+def categorize():
+    data = json.load(sys.stdin)
+    title = data.get("Pr", {}).get("Title", "")
+    description = data.get("Line", {}).get("Description", "")
+
+    # Prefer the cleaned description, fall back to raw PR title
+    text = description if description else title
+
+    patterns = [
+        (r"^feat!:", "01 Breaking feature"),
+        (r"^fix!:", "02 Breaking bug fix"),
+        (r"^feat:", "03 Feature"),
+        (r"^fix:", "04 Bug fix"),
+        (r"^docs:", "05 Documentation"),
+        (r"^chore\(deps\):", "06 Dependencies"),
+        (r"^chore:", "07 Chore"),
+        (r"^ci:", "08 CI/CD"),
+        (r"^refactor:", "09 Refactoring"),
+        (r"^test:", "10 Tests"),
+        (r"^perf:", "11 Performance"),
+    ]
+
+    for pat, category in patterns:
+        if re.search(pat, text, re.IGNORECASE):
+            print(category)
+            return
+
+    print("99 Other")
+
+if __name__ == "__main__":
+    categorize()

@@ -1,0 +1,41 @@
+name: release-notes-assistant
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - labeled
+
+env:
+  RNA_VERSION: v1.7.3 # renovate: datasource=forgejo-releases depName=forgejo/release-notes-assistant registryUrl=https://code.forgejo.org
+
+jobs:
+  preview:
+    runs-on: als-huge-gh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - &get-jwt
+        name: Get JWT
+        id: jwt
+        uses: alt-atomic/actions/get-oidc-jwt@7a45f9380fda10e88babc92c361727cae7c6f29c
+        with:
+          aud: "u:776:6d80399d-a0a1-46a7-80f3-5733a0581e34"
+
+      - name: Install release-notes-assistant
+        run: |
+          set -x
+          wget -O /usr/local/bin/rna "https://code.forgejo.org/forgejo/release-notes-assistant/releases/download/${RNA_VERSION}/release-notes-assistant"
+          chmod +x /usr/local/bin/rna
+
+      - name: release-notes-assistant preview
+        run: |
+          rna --config .release-notes-assistant.yaml \
+              --storage pr \
+              --storage-location ${{ forgejo.event.pull_request.number }} \
+              --forgejo-url ${{ forgejo.server_url }} \
+              --repository ${{ forgejo.repository }} \
+              --token ${{ steps.jwt.outputs.jwt }} \
+              preview ${{ forgejo.event.pull_request.number }}
