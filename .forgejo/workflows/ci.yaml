@@ -156,6 +156,7 @@ jobs:
     needs: [generate-version, checks, test-unit, test-integration]
     uses: ./.forgejo/workflows/reusable-build.yml
     secrets: inherit
+    enable-openid-connect: true
     with:
       version: ${{ needs.generate-version.outputs.version }}
       git_commit: ${{ needs.generate-version.outputs.git_commit }}
