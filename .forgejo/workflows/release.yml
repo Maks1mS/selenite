@@ -1,0 +1,36 @@
+on:
+  push:
+    tags: 'v*'
+
+jobs:
+  release:
+    runs-on: als-tiny
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: detect prerelease
+        id: pre
+        run: |
+          if [[ "${FORGEJO_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-.+ ]]; then
+            echo "value=true" >> "$FORGEJO_OUTPUT"
+          else
+            echo "value=false" >> "$FORGEJO_OUTPUT"
+          fi
+
+      - name: Get JWT
+        id: jwt
+        uses: alt-atomic/actions/get-oidc-jwt@7a45f9380fda10e88babc92c361727cae7c6f29c
+        with:
+          aud: "u:776:0020b0c9-ec42-475a-911b-098062393116"
+
+      - name: release
+        uses: actions/forgejo-release@98265452477dafb3f0f27ba9c462c90b18cb44fd # v2.13.4
+        with:
+          direction: upload
+          skip-assets: true
+          release-notes-assistant: true
+          token: ${{ steps.jwt.outputs.jwt }}
+          override: ${{ vars.RELEASE_OVERRIDE || 'false' }}
+          verbose: ${{ vars.RELEASE_VERBOSE || 'false' }}
+          prerelease: ${{ steps.pre.outputs.value }}
