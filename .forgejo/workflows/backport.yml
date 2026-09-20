@@ -6,7 +6,7 @@ on:
 
 jobs:
   backporting:
-    if: forgejo.event.pull_request.merged && contains(toJSON(forgejo.event.pull_request.labels), 'backport/v')
+    if: forgejo.event.pull_request.merged && contains(toJSON(forgejo.event.pull_request.labels), 'backport/release-')
     runs-on: als-huge-gh
 
     enable-openid-connect: true
