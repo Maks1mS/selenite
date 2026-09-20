@@ -1,9 +1,12 @@
 on:
   push:
-    tags: 'v*'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'      # v1.0.0
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'    # v1.0.0-rc.1, v1.0.0-dev, ...
 
 jobs:
   release:
+    if: ${{ !contains(forgejo.ref_name, '-dev') }}
     runs-on: als-tiny
     enable-openid-connect: true
 
