@@ -28,5 +28,6 @@ jobs:
           pull-request: ${{ forgejo.event.pull_request.url }}
           auto-no-squash: true
           enable-err-notification: true
+          git-client: codeberg
           git-user: alt-atomic-bot
           git-email: alt-atomic-bot@noreply.altlinux.space
