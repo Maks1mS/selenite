@@ -57,4 +57,4 @@ jobs:
           token: ${{ steps.jwt.outputs.jwt }}
           override: ${{ vars.RELEASE_OVERRIDE || 'false' }}
           verbose: ${{ vars.RELEASE_VERBOSE || 'false' }}
-          prerelease: ${{ steps.pre.outputs.value }}
+          prerelease: ${{ needs.meta.outputs.prerelease }}
