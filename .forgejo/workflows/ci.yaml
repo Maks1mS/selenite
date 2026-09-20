@@ -161,5 +161,5 @@ jobs:
       version: ${{ needs.generate-version.outputs.version }}
       git_commit: ${{ needs.generate-version.outputs.git_commit }}
       git_ref: ${{ forgejo.ref }}
-      image_aliases: nightly
-      push: ${{ forgejo.ref == 'refs/heads/main' }}
+      image_aliases: ${{ case(forgejo.ref == 'refs/heads/main', 'nightly', '') }}
+      push: ${{ forgejo.ref == 'refs/heads/main' || startsWith(forgejo.ref, 'refs/heads/release-') }}
