@@ -28,7 +28,6 @@ jobs:
   build-image:
     name: Build image
     runs-on: als-huge
-    needs: [checks, test-unit, test-integration]
 
     container:
       image: altlinux.space/alt-atomic/builder-image:sisyphus
