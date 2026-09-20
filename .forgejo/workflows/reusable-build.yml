@@ -26,6 +26,11 @@ on:
 
 enable-openid-connect: true
 
+env:
+  IMAGE_NAME: alt-atomic/selenite/cloud
+  REGISTRY: altlinux.space
+  CACHE_IMAGE: altlinux.space/alt-atomic/selenite-cache
+
 jobs:
   build-image:
     name: Build image
