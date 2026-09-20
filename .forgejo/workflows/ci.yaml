@@ -153,10 +153,9 @@ jobs:
           echo "git_commit=$(git rev-parse HEAD)" >> $FORGEJO_OUTPUT
 
   build:
-    needs: [generate-version, checks, test-unit, test-integration]
+    needs: [generate-version]
     uses: ./.forgejo/workflows/reusable-build.yml
     secrets: inherit
-    enable-openid-connect: true
     with:
       version: ${{ needs.generate-version.outputs.version }}
       git_commit: ${{ needs.generate-version.outputs.git_commit }}

@@ -24,6 +24,8 @@ on:
         required: false
         default: false
 
+enable-openid-connect: true
+
 jobs:
   build-image:
     name: Build image
@@ -31,8 +33,6 @@ jobs:
 
     container:
       image: altlinux.space/alt-atomic/builder-image:sisyphus
-
-    enable-openid-connect: true
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -93,24 +93,22 @@ jobs:
     container:
       image: altlinux.space/alt-atomic/builder-image:sisyphus
 
-    enable-openid-connect: true
-
     steps:
       - *get-jwt
 
       - name: Create manifest
         uses: alt-atomic/actions/create-manifest@e835eedfc64536d16df2a43259d034c5cb25e8ce
         with:
-            registry: ${{ env.REGISTRY }}
-            registry-username: "<token>"
-            registry-password: ${{ steps.jwt.outputs.jwt }}
+          registry: ${{ env.REGISTRY }}
+          registry-username: "<token>"
+          registry-password: ${{ steps.jwt.outputs.jwt }}
 
-            image-name: alt-atomic/selenite/cloud
-            image-wildcard: ${{ format('{0}/alt-atomic/selenite/cloud/@ARCH@:{1}', env.REGISTRY, inputs.version) }}
-            arch-tags: amd64
+          image-name: alt-atomic/selenite/cloud
+          image-wildcard: ${{ format('{0}/alt-atomic/selenite/cloud/@ARCH@:{1}', env.REGISTRY, inputs.version) }}
+          arch-tags: amd64
 
-            image-tag: ${{ inputs.version }}
-            image-aliases: ${{ inputs.image_aliases }}
+          image-tag: ${{ inputs.version }}
+          image-aliases: ${{ inputs.image_aliases }}
 
-            cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
-            cosign-password: ${{ secrets.COSIGN_PASSWORD }}
+          cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
+          cosign-password: ${{ secrets.COSIGN_PASSWORD }}
