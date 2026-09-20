@@ -1,0 +1,117 @@
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version'
+        type: string
+        required: true
+      git_ref:
+        description: 'Git ref'
+        type: string
+        required: true
+      git_commit:
+        description: 'Git commit SHA'
+        type: string
+        required: true
+      image_aliases:
+        description: 'Additional image tags (aliases)'
+        type: string
+        required: false
+        default: ''
+      push:
+        description: 'Push image and manifest to registry'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  build-image:
+    name: Build image
+    runs-on: als-huge
+    needs: [checks, test-unit, test-integration]
+
+    container:
+      image: altlinux.space/alt-atomic/builder-image:sisyphus
+
+    enable-openid-connect: true
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - &get-jwt
+        name: Get JWT
+        id: jwt
+        uses: alt-atomic/actions/get-oidc-jwt@7a45f9380fda10e88babc92c361727cae7c6f29c
+        with:
+          aud: "u:776:cdd6fb48-aeb1-4f4f-b02d-9add5837ea6a"
+
+      - name: Compute podman extra args
+        id: podman_args
+        env:
+          PUSH: ${{ inputs.push }}
+        run: |
+          ARGS="--cache-from $CACHE_IMAGE"
+          if [ "$PUSH" = "true" ]; then
+            ARGS="$ARGS --cache-to $CACHE_IMAGE"
+          fi
+          echo "args=$ARGS" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image
+        uses: alt-atomic/actions/build-and-push@e835eedfc64536d16df2a43259d034c5cb25e8ce
+        with:
+          image-name: alt-atomic/selenite/cloud/amd64
+          image-tag: ${{ inputs.version }}
+          image-aliases: ${{ inputs.image_aliases }}
+
+          packages-info-enabled: false
+
+          build-args: |
+            VERSION=${{ inputs.version }}
+            GIT_COMMIT=${{ inputs.git_commit }}
+
+          podman-extra-args: ${{ steps.podman_args.outputs.args }}
+
+          pretty-name: Selenite
+          version: ${{ inputs.version }}
+          source: ${{ forgejo.server_url }}/${{ forgejo.repository }}
+          rechunk-enabled: true
+          experimental-use-chunkah: true
+          sbom-attestation-enabled: true
+          extra-labels: |
+            org.alt-atomic.installer.custom-preset=selenite
+
+          push-enabled: ${{ inputs.push }}
+          registry-password: ${{ case(inputs.push, steps.jwt.outputs.jwt, '') }}
+          cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
+          cosign-password: ${{ secrets.COSIGN_PASSWORD }}
+
+  build-image-manifest:
+    if: ${{ inputs.push }}
+    name: Build image manifest
+    runs-on: als-huge
+    needs: [build-image]
+
+    container:
+      image: altlinux.space/alt-atomic/builder-image:sisyphus
+
+    enable-openid-connect: true
+
+    steps:
+      - *get-jwt
+
+      - name: Create manifest
+        uses: alt-atomic/actions/create-manifest@e835eedfc64536d16df2a43259d034c5cb25e8ce
+        with:
+            registry: ${{ env.REGISTRY }}
+            registry-username: "<token>"
+            registry-password: ${{ steps.jwt.outputs.jwt }}
+
+            image-name: alt-atomic/selenite/cloud
+            image-wildcard: ${{ format('{0}/alt-atomic/selenite/cloud/@ARCH@:{1}', env.REGISTRY, inputs.version) }}
+            arch-tags: amd64
+
+            image-tag: ${{ inputs.version }}
+            image-aliases: ${{ inputs.image_aliases }}
+
+            cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
+            cosign-password: ${{ secrets.COSIGN_PASSWORD }}

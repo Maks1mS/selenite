@@ -152,91 +152,12 @@ jobs:
           echo "version=$VERSION" >> $FORGEJO_OUTPUT
           echo "git_commit=$(git rev-parse HEAD)" >> $FORGEJO_OUTPUT
 
-  build-image:
-    name: Build image
-    runs-on: als-huge
-    needs: [generate-version, checks, test-unit, test-integration]
-
-    container:
-      image: altlinux.space/alt-atomic/builder-image:sisyphus
-
-    enable-openid-connect: true
-
-    steps:
-      - *checkout
-
-      - &get-jwt
-        name: Get JWT
-        id: jwt
-        uses: alt-atomic/actions/get-oidc-jwt@7a45f9380fda10e88babc92c361727cae7c6f29c
-        with:
-          aud: "u:776:cdd6fb48-aeb1-4f4f-b02d-9add5837ea6a"
-
-      - name: Compute podman extra args
-        id: podman_args
-        run: |
-          ARGS="--cache-from $CACHE_IMAGE"
-          if [ "$FORGEJO_REF" = "refs/heads/main" ]; then
-            ARGS="$ARGS --cache-to $CACHE_IMAGE"
-          fi
-          echo "args=$ARGS" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push image
-        uses: alt-atomic/actions/build-and-push@e835eedfc64536d16df2a43259d034c5cb25e8ce
-        with:
-          image-name: alt-atomic/selenite/cloud/amd64
-          image-tag: ${{ needs.generate-version.outputs.version }}
-          image-aliases: nightly
-
-          packages-info-enabled: false
-
-          build-args: |
-            VERSION=${{ needs.generate-version.outputs.version }}
-            GIT_COMMIT=${{ needs.generate-version.outputs.git_commit }}
-
-          podman-extra-args: ${{ steps.podman_args.outputs.args }}
-
-          pretty-name: Selenite
-          version: ${{ needs.generate-version.outputs.version }}
-          source: ${{ forgejo.server_url }}/${{ forgejo.repository }}
-          rechunk-enabled: true
-          experimental-use-chunkah: true
-          sbom-attestation-enabled: true
-          extra-labels: |
-            org.alt-atomic.installer.custom-preset=selenite
-
-          push-enabled: ${{ forgejo.ref == 'refs/heads/main' }}
-          registry-password: ${{ case(forgejo.ref == 'refs/heads/main', steps.jwt.outputs.jwt, '') }}
-          cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
-          cosign-password: ${{ secrets.COSIGN_PASSWORD }}
-
-  build-image-manifest:
-    if: ${{ forgejo.ref == 'refs/heads/main' }}
-    name: Build image manifest
-    runs-on: als-huge
-    needs: [generate-version, build-image]
-
-    container:
-      image: altlinux.space/alt-atomic/builder-image:sisyphus
-
-    enable-openid-connect: true
-
-    steps:
-      - *get-jwt
-
-      - name: Create manifest
-        uses: alt-atomic/actions/create-manifest@e835eedfc64536d16df2a43259d034c5cb25e8ce
-        with:
-            registry: ${{ env.REGISTRY }}
-            registry-username: "<token>"
-            registry-password: ${{ steps.jwt.outputs.jwt }}
-
-            image-name: alt-atomic/selenite/cloud
-            image-wildcard: ${{ format('{0}/alt-atomic/selenite/cloud/@ARCH@:{1}', env.REGISTRY, needs.generate-version.outputs.version) }}
-            arch-tags: amd64
-
-            image-tag: ${{ needs.generate-version.outputs.version }}
-            image-aliases: nightly
-
-            cosign-image-sign: ${{ secrets.IMAGE_SIGN }}
-            cosign-password: ${{ secrets.COSIGN_PASSWORD }}
+  build:
+    needs: [generate-version]
+    uses: ./.forgejo/workflows/reusable-build.yml
+    with:
+      version: ${{ needs.generate-version.outputs.version }}
+      git_commit: ${{ needs.generate-version.outputs.git_commit }}
+      git_ref: ${{ forgejo.ref }}
+      image_aliases: nightly
+      push: ${{ forgejo.ref == 'refs/heads/main' }}
