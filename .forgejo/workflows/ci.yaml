@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - release-*
+      - release/*
   pull_request:
 
 env:
@@ -162,4 +162,4 @@ jobs:
       git_commit: ${{ needs.generate-version.outputs.git_commit }}
       git_ref: ${{ forgejo.ref }}
       image_aliases: ${{ case(forgejo.ref == 'refs/heads/main', 'nightly', '') }}
-      push: ${{ forgejo.ref == 'refs/heads/main' || startsWith(forgejo.ref, 'refs/heads/release-') }}
+      push: ${{ forgejo.ref == 'refs/heads/main' || startsWith(forgejo.ref, 'refs/heads/release/') }}
