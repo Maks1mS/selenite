@@ -6,7 +6,7 @@ on:
 
 jobs:
   backporting:
-    if: forgejo.event.pull_request.merged && contains(toJSON(forgejo.event.pull_request.labels), 'backport/release-')
+    if: forgejo.event.pull_request.merged && contains(toJSON(forgejo.event.pull_request.labels), 'backport/release/')
     runs-on: als-huge-gh
 
     enable-openid-connect: true
@@ -20,7 +20,7 @@ jobs:
 
       - uses: actions/git-backporting@17bab14ff4b362d044e12c18e491b4ef8e69a4b1 # v4.10.0
         with:
-          target-branch-pattern: "^backport/(?<target>release-.*)$"
+          target-branch-pattern: "^backport/(?<target>release/.*)$"
           strategy: ort
           strategy-option: find-renames
           cherry-pick-options: -x

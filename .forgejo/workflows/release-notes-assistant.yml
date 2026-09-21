@@ -13,6 +13,7 @@ env:
 
 jobs:
   preview:
+    if: (!contains(forge.event.pull_request.labels.*.name, 'Kind/DependencyUpdate'))
     runs-on: als-huge-gh
     enable-openid-connect: true
 
