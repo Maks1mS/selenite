@@ -3,7 +3,7 @@ branch-development: 'main'
 branch-pattern: 'release/v*'
 branch-find-version: 'release/v(?P<version>\d+\.\d+)'
 branch-to-version: '${version}.0'
-branch-from-version: 'release/v%[1]d.%[2]d'(chore: migrate to release/v* branch shema)
+branch-from-version: 'release/v%[1]d.%[2]d'
 tag-from-version: 'v%[1]d.%[2]d.%[3]d'
 cleanup-line: 'sed -Ee "s/^(feat|fix|docs|chore|ci|refactor|test|perf)!?:\s*//g" -e "s/^\[WIP\] //" -e "s/^WIP: //" -e "s/^(chore\(deps\)|renovate)[:]\s*//g"'
 render-header: |
