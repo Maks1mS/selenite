@@ -48,6 +48,7 @@
             "semanticCommitScope": ""
         }
     ],
+    "labels": ["Kind/DependencyUpdate"],
     "postUpdateOptions": [
         "gomodTidy",
         "gomodUpdateImportPaths"
