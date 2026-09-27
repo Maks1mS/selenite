@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Get JWT
         id: jwt
-        uses: alt-atomic/actions/get-oidc-jwt@7a45f9380fda10e88babc92c361727cae7c6f29c
+        uses: maks1ms/get-oidc-jwt-action@8e5d43d89291d2659075ce452b2806ff3154d521 # v1.0.0
         with:
           aud: "u:776:c4f88c37-aefc-4418-b429-9fc3240c39d0"
 
