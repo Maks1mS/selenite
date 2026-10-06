@@ -61,7 +61,7 @@ jobs:
           echo "args=$ARGS" >> "$GITHUB_OUTPUT"
 
       - name: Build and push image
-        uses: alt-atomic/actions/build-and-push@e835eedfc64536d16df2a43259d034c5cb25e8ce
+        uses: alt-atomic/actions/build-and-push@8ebb2768838e3616132f3d0b1a197b2e44c4690d
         with:
           image-name: alt-atomic/selenite/cloud/amd64
           image-tag: ${{ inputs.version }}
@@ -81,6 +81,7 @@ jobs:
           rechunk-enabled: true
           experimental-use-chunkah: true
           sbom-attestation-enabled: true
+          layersize-enabled: true
           extra-labels: |
             org.alt-atomic.installer.custom-preset=selenite
 
