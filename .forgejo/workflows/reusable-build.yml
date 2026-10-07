@@ -103,7 +103,7 @@ jobs:
       - *get-jwt
 
       - name: Create manifest
-        uses: alt-atomic/actions/create-manifest@e835eedfc64536d16df2a43259d034c5cb25e8ce
+        uses: alt-atomic/actions/create-manifest@a47c554f9e1303cc3c2b156e3c3a335e5c8e4363
         with:
           registry: ${{ env.REGISTRY }}
           registry-username: "<token>"
