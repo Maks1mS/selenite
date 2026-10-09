@@ -21,3 +21,4 @@ modules:
         - greenboot.yml
         - controller-deps.yml
         - qemu-guest-agent.yml
+        - growpart.yml

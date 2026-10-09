@@ -1,0 +1,74 @@
+#!/bin/bash
+# Taken from https://gitlab.com/fedora/bootc/base-images/-/tree/82a11c4a4511f42edcfd63d769d1917034a7b658/standard
+#
+# SPDX-License-Identifier: MIT
+#
+# Copyright 2018 Fedora CoreOS Authors.
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+set -eu
+
+backing_device=$(findmnt -vno SOURCE /sysroot)
+echo "Backing device: ${backing_device}"
+
+# Handling devicemapper targets is a whole other thing
+case $backing_device in
+    /dev/mapper/*) echo "Not growing $backing_device"; exit 0 ;;
+esac
+
+syspath=/sys/class/block/$(basename "${backing_device}")
+if ! test -d "${syspath}"; then
+    echo "failed to find backing device ${syspath}"; exit 1
+fi
+
+# Only partitions have a "partition" attribute in sysfs.  A rootfs on an
+# mdraid array, on a device-mapper node, or directly on a whole disk has
+# nothing here for us to grow, and growing those is a different
+# operation.  Skip rather than fail, so that the unit does not leave an
+# otherwise healthy system "degraded".
+if ! test -f "${syspath}"/partition; then
+    echo "Not growing ${backing_device}: not a partition"; exit 0
+fi
+partition=$(cat "${syspath}"/partition)
+
+# Walk up to find the parent blockdev
+parentpath=$(dirname "$(realpath "${syspath}")")
+devmajmin=$(cat "${parentpath}"/dev)
+parent="/dev/block/${devmajmin}"
+
+# Grow the partition
+tmpf=$(mktemp)
+# Ignore errors because growpart exits 1 if nothing changed;
+# we need to check the output for NOCHANGE:
+if ! /usr/bin/growpart "${parent}" "${partition}" > "${tmpf}"; then
+    cat "${tmpf}"
+    if grep -qEe '^NOCHANGE: ' "${tmpf}"; then
+        exit 0
+    fi
+    echo "growpart failed"
+    exit 1
+fi
+cat "${tmpf}"
+# Now, temporarily remount the sysroot writable in our mount namespace
+mount -o remount,rw /sysroot
+# And defer to systemd's growfs wrapper which handles dispatching on
+# the target filesystem type.
+/usr/lib/systemd/systemd-growfs /sysroot

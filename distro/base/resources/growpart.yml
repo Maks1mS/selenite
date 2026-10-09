@@ -1,0 +1,14 @@
+modules:
+  - name: Install growpart
+    type: packages
+    body:
+      update: true
+      install:
+        - cloud-utils-growpart
+
+  - name: Enable bootc-generic-growpart.service
+    type: systemd
+    body:
+      enabled: true
+      targets:
+        - bootc-generic-growpart.service
