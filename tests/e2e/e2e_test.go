@@ -25,7 +25,7 @@ func getFreePort() (string, error) {
 	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port), nil
 }
 
-func startQEMU(diskImage, sshPort string) (*exec.Cmd, error) {
+func startQEMU(diskImage, diskFormat, sshPort string) (*exec.Cmd, error) {
 	cmd := exec.Command("qemu-system-x86_64",
 		"-enable-kvm",
 		"-m", "384M",
@@ -33,7 +33,7 @@ func startQEMU(diskImage, sshPort string) (*exec.Cmd, error) {
 		"-display", "none",
 		"-serial", "none",
 		"-monitor", "none",
-		"-drive", fmt.Sprintf("file=%s,format=raw,if=virtio,snapshot=on", diskImage),
+		"-drive", fmt.Sprintf("file=%s,format=%s,if=virtio,snapshot=on", diskImage, diskFormat),
 		"-netdev", fmt.Sprintf("user,id=net0,hostfwd=tcp::%s-:%s", sshPort, "23234"),
 		"-device", "virtio-net-pci,netdev=net0",
 	)

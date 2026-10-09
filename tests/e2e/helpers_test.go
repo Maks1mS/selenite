@@ -57,15 +57,23 @@ func dialSSH(addr string, cfg *gossh.ClientConfig, timeout time.Duration) (*goss
 // Each test gets its own VM for clean isolated state.
 func bootVM(t *testing.T) *testClient {
 	t.Helper()
-	diskImage := os.Getenv("E2E_DISK_IMAGE")
-	if diskImage == "" {
-		diskImage = "/var/tmp/selenite/disk.raw"
-	}
+	return bootVMWithDisk(t, baseDiskImage(), "raw")
+}
 
+func baseDiskImage() string {
+	if diskImage := os.Getenv("E2E_DISK_IMAGE"); diskImage != "" {
+		return diskImage
+	}
+	return "/var/tmp/selenite/disk.raw"
+}
+
+// bootVMWithDisk is like bootVM, but boots from the given disk image.
+func bootVMWithDisk(t *testing.T, diskImage, diskFormat string) *testClient {
+	t.Helper()
 	sshPort, err := getFreePort()
 	require.NoError(t, err, "get free port")
 
-	cmd, err := startQEMU(diskImage, sshPort)
+	cmd, err := startQEMU(diskImage, diskFormat, sshPort)
 	require.NoError(t, err, "start QEMU")
 	t.Cleanup(func() { cmd.Process.Kill() })
 
