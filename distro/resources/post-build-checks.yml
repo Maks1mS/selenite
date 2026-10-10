@@ -21,3 +21,11 @@ modules:
       command: |
         getent group systemd-journal | grep -q '_selenite-podman-executor' && \
         echo "_selenite-podman-executor systemd-journal OK" || { echo "_selenite-podman-executor not in systemd-journal $(cat /etc/group)"; exit 1; }
+
+  - name: verify podman-compose version
+    type: shell
+    body:
+      command: |
+        v="$(rpm -q --qf '%{VERSION}-%{RELEASE}' podman-compose)" && \
+        test "$v" = "1.6.0-alt1.selenite1" && \
+        echo "podman-compose $v OK" || { echo "unexpected podman-compose version: $v"; exit 1; }
