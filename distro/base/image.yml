@@ -1,4 +1,10 @@
 modules:
+  - name: Add Selenite repo
+    type: repos
+    body:
+      custom:
+        - rpm https://altlinux.space/api/packages/alt-atomic-packages/alt/group/selenite-packages/v0.1.0-dev-4-ge9b8927.repo noarch classic
+
   - name: Copy root
     type: copy
     body:
