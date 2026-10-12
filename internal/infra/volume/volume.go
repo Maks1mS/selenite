@@ -62,6 +62,15 @@ func (m *volumeManager) Import(ctx context.Context, name string, r io.Reader) er
 		dec.Close()
 	}()
 
+	// podman volume import requires the volume to exist.
+	if err := m.runner.Run(
+		ctx,
+		ExecutorBin,
+		[]string{"create", "--ignore", name},
+	); err != nil {
+		return fmt.Errorf("volume create: %w", err)
+	}
+
 	if err := m.runner.Run(
 		ctx,
 		ExecutorBin,
@@ -81,7 +90,7 @@ func (m *volumeManager) Prune(ctx context.Context, w io.Writer) error {
 		[]string{"prune", "-f"},
 		executil.WithStdout(w),
 	); err != nil {
-		return fmt.Errorf("volume import: %w", err)
+		return fmt.Errorf("volume prune: %w", err)
 	}
 
 	return nil
