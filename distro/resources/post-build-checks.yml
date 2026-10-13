@@ -29,3 +29,11 @@ modules:
         v="$(rpm -q --qf '%{VERSION}-%{RELEASE}' podman-compose)" && \
         test "$v" = "1.6.0-alt1.selenite1" && \
         echo "podman-compose $v OK" || { echo "unexpected podman-compose version: $v"; exit 1; }
+
+  - name: verify short image names resolve to docker.io only
+    type: shell
+    body:
+      command: |
+        r="$(podman info --format '{{json .Registries.search}}')" && \
+        test "$r" = '["docker.io"]' && \
+        echo "unqualified-search-registries OK" || { echo "unexpected unqualified-search-registries: $r"; exit 1; }

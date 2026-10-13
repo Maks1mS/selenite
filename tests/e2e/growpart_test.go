@@ -25,7 +25,7 @@ func hostCmd(t *testing.T, client *testClient, cmd string) string {
 	const hostOutputMarker = "--- host output ---"
 
 	out, err := runPtyCmd(t, client.ssh,
-		fmt.Sprintf(`debug busybox -- sh -c "echo '%s'; chroot /host %s"`, hostOutputMarker, cmd))
+		fmt.Sprintf(`debug quay.io/quay/busybox -- sh -c "echo '%s'; chroot /host %s"`, hostOutputMarker, cmd))
 	require.NoError(t, err, "host command %q\noutput: %s", cmd, out)
 	_, after, found := strings.Cut(out, hostOutputMarker)
 	require.True(t, found, "host command %q: marker not found in output: %s", cmd, out)
