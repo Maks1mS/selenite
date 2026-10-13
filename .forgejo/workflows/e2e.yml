@@ -61,7 +61,7 @@ jobs:
   end-to-end-cleanup:
     runs-on: self-hosted-small-amd64
     needs: [end-to-end-provision, end-to-end]
-    if: always()
+    if: always() && needs.end-to-end-provision.result != 'skipped'
     steps:
       - <<: *provision-runner
         name: Cleanup ephemeral runner
