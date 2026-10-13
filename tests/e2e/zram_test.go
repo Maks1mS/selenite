@@ -71,7 +71,7 @@ func TestZramConfig(t *testing.T) {
 `)
 		mustRunCmdWithStdin(t, client, "machine config apply", strings.NewReader(cfg))
 
-		out, err := runPtyCmd(t, client.ssh, "debug busybox -- cat /host/etc/systemd/zram-generator.conf")
+		out, err := runPtyCmd(t, client.ssh, "debug quay.io/quay/busybox -- cat /host/etc/systemd/zram-generator.conf")
 		require.NoError(t, err)
 		assert.Contains(t, out, "[zram0]")
 		assert.Contains(t, out, "zram-size=ram/4")
@@ -80,13 +80,13 @@ func TestZramConfig(t *testing.T) {
 	})
 
 	run(t, "zram swap device is active after apply", func(t *testing.T) {
-		out, err := runPtyCmd(t, client.ssh, "debug busybox -- sh -c \"chroot /host /usr/bin/systemctl is-active dev-zram0.swap\"")
+		out, err := runPtyCmd(t, client.ssh, "debug quay.io/quay/busybox -- sh -c \"chroot /host /usr/bin/systemctl is-active dev-zram0.swap\"")
 		require.NoError(t, err)
 		assert.Contains(t, out, "active")
 	})
 
 	run(t, "/proc/swaps shows zram0", func(t *testing.T) {
-		out, err := runPtyCmd(t, client.ssh, "debug busybox -- cat /host/proc/swaps")
+		out, err := runPtyCmd(t, client.ssh, "debug quay.io/quay/busybox -- cat /host/proc/swaps")
 		require.NoError(t, err)
 		assert.Contains(t, out, "/dev/zram0")
 	})
@@ -106,7 +106,7 @@ func TestZramConfig(t *testing.T) {
 `)
 		mustRunCmdWithStdin(t, client, "machine config apply", strings.NewReader(cfg))
 
-		out, err := runPtyCmd(t, client.ssh, "debug busybox -- cat /host/etc/systemd/zram-generator.conf")
+		out, err := runPtyCmd(t, client.ssh, "debug quay.io/quay/busybox -- cat /host/etc/systemd/zram-generator.conf")
 		require.NoError(t, err)
 		assert.Contains(t, out, "zram-size=ram/2")
 		assert.Contains(t, out, "compression-algorithm=lz4")
@@ -114,7 +114,7 @@ func TestZramConfig(t *testing.T) {
 	})
 
 	run(t, "zram swap device is still active after re-apply", func(t *testing.T) {
-		out, err := runPtyCmd(t, client.ssh, "debug busybox -- sh -c \"chroot /host /usr/bin/systemctl is-active dev-zram0.swap\"")
+		out, err := runPtyCmd(t, client.ssh, "debug quay.io/quay/busybox -- sh -c \"chroot /host /usr/bin/systemctl is-active dev-zram0.swap\"")
 		require.NoError(t, err)
 		assert.Contains(t, out, "active")
 	})
@@ -125,11 +125,11 @@ func TestZramConfig(t *testing.T) {
 `)
 		mustRunCmdWithStdin(t, client, "machine config apply", strings.NewReader(cfg))
 
-		out, err := runPtyCmd(t, client.ssh, "debug busybox -- sh -c \"test -f /host/etc/systemd/zram-generator.conf && echo exists || echo missing\"")
+		out, err := runPtyCmd(t, client.ssh, "debug quay.io/quay/busybox -- sh -c \"test -f /host/etc/systemd/zram-generator.conf && echo exists || echo missing\"")
 		require.NoError(t, err)
 		assert.Contains(t, out, "missing")
 
-		out, err = runPtyCmd(t, client.ssh, "debug busybox -- cat /host/proc/swaps")
+		out, err = runPtyCmd(t, client.ssh, "debug quay.io/quay/busybox -- cat /host/proc/swaps")
 		require.NoError(t, err)
 		assert.NotContains(t, out, "zram0")
 

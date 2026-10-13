@@ -31,7 +31,7 @@ func TestMiscCommandsWorks(t *testing.T) {
 	})
 
 	run(t, "debug requires PTY", func(t *testing.T) {
-		out, err := runCmdWithStdin(t, client.ssh, "debug busybox", nil)
+		out, err := runCmdWithStdin(t, client.ssh, "debug quay.io/quay/busybox", nil)
 		require.Error(t, err)
 		assert.Contains(t, out, "requires an active PTY")
 	})
@@ -43,7 +43,7 @@ func TestMiscCommandsWorks(t *testing.T) {
 	})
 
 	run(t, "debug runs a command in container with /host mounted", func(t *testing.T) {
-		out, err := runPtyCmd(t, client.ssh, "debug busybox cat /host/etc/os-release")
+		out, err := runPtyCmd(t, client.ssh, "debug quay.io/quay/busybox cat /host/etc/os-release")
 		require.NoError(t, err, "output: %s", out)
 		assert.Contains(t, strings.TrimSpace(out), "Selenite")
 	})
