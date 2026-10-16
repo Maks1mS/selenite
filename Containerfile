@@ -1,4 +1,4 @@
-FROM altlinux.space/alt-atomic/core-minimal/stable:20261009@sha256:d6f6d40dde38144c73cac27ffce60dd7a98fb39cd97c24a4faa5884d0ffc8c4b as base
+FROM altlinux.space/alt-atomic/core-minimal/stable:20261016@sha256:252b3aeeb2de40d7ee698a10998001ad1a784a0021c961327e2104155c7b0131 as base
 
 FROM base as builder
 
