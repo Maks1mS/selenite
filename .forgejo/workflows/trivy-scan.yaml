@@ -1,0 +1,74 @@
+name: Scan for vulnerabilities
+
+on:
+  push:
+    branches:
+      - 'wip-trivy-image-scan'
+  schedule:
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+
+env:
+  TRIVY_IMAGE: registry.altlinux.org/sisyphus/trivy:0.75.0
+  TRIVY_TEMPLATE: '@.forgejo/trivy-summary.tpl'
+
+jobs:
+  repo:
+    name: Scan repository
+    runs-on: als-huge
+
+    container:
+      image: altlinux.space/actions/runner/containers:sisyphus
+
+    steps:
+      - &checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Scan Go modules
+        run: |
+          podman run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" \
+            fs --scanners vuln --cache-dir .trivy-cache --skip-dirs .trivy-cache \
+            --format template --template "$TRIVY_TEMPLATE" \
+            --output trivy-gomod.md --exit-code 0 \
+            .
+
+      - name: Write step summary
+        run: |
+          {
+            echo "## Go modules"
+            cat trivy-gomod.md
+          } >> "$FORGEJO_STEP_SUMMARY"
+
+  image:
+    name: Scan image (${{ matrix.name }})
+    runs-on: als-huge
+
+    container:
+      image: altlinux.space/actions/runner/containers:sisyphus
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: cloud
+            image: altlinux.space/alt-atomic/selenite/cloud:nightly
+
+    steps:
+      - *checkout
+
+      - name: Scan OS packages
+        run: |
+          podman run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" \
+            image --scanners vuln --pkg-types os --cache-dir .trivy-cache \
+            --format template --template "$TRIVY_TEMPLATE" \
+            --output trivy-os.md --exit-code 0 \
+            --sbom-sources oci "${{ matrix.image }}"
+
+      - name: Write step summary
+        run: |
+          {
+            echo "# ${{ matrix.image }}"
+            echo
+            echo "## OS packages"
+            cat trivy-os.md
+          } >> "$FORGEJO_STEP_SUMMARY"
