@@ -34,8 +34,17 @@ jobs:
       image_aliases: ${{ needs.meta.outputs.image_aliases }}
       push: true
 
+  build-qcow2:
+    needs: build
+    uses: ./.forgejo/workflows/reusable-build-qcow2.yml
+    secrets: inherit
+    with:
+      image: altlinux.space/alt-atomic/selenite/cloud:${{ forgejo.ref_name }}
+      name: selenite-cloud-${{ forgejo.ref_name }}-amd64
+      package-name: selenite-cloud/nightly
+
   release:
-    needs: [meta, build]
+    needs: [meta, build, build-qcow2]
     runs-on: als-tiny
     enable-openid-connect: true
 
