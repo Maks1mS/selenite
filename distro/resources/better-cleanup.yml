@@ -8,6 +8,20 @@ modules:
         - /var/cache/apt/srcpkgcache.bin
         - /var/lib/apt/lists
 
+  - name: Cleanup /run/user
+    type: remove
+    body:
+      targets:
+        - /run/user
+      inside: true
+
+  - name: Cleanup /run/libpod and /run/containers
+    type: remove
+    body:
+      targets:
+        - /run/libpod
+        - /run/containers
+
   - name: Cleanup locale
     type: shell
     body:
