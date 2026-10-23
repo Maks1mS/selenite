@@ -62,20 +62,15 @@ modules:
         BUILD_ID: "Selenite ${{ Env.VERSION }}"
         BUG_REPORT_URL: "https://altlinux.space/alt-atomic/selenite/issues"
 
-  - name: Base cleanup
-    type: include
-    body:
-      targets:
-        - /usr/share/apm/includes/common/cleanup.yml
-
-  - name: Better cleanup
-    type: include
-    body:
-      targets:
-        - better-cleanup.yml
-
   - name: Post build checks
     type: include
     body:
       targets:
         - post-build-checks.yml
+
+  - name: Cleanup
+    type: include
+    body:
+      targets:
+        - /usr/share/apm/includes/common/cleanup.yml
+        - better-cleanup.yml
