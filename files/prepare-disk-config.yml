@@ -1,0 +1,22 @@
+method:
+  type: to-raw-image
+
+runtime:
+  type: podman
+
+image:
+  ref: $IMAGE
+
+rawimage:
+  path: $DISK_PATH
+  size: 5368709120 # 5 * 1024 * 1024 * 1024
+
+bootloader:
+  type: grub-bios
+
+language:
+  code: ru_RU.UTF-8
+
+filesystem:
+  type: btrfs
+  encrypted: false

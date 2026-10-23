@@ -1,0 +1,102 @@
+on:
+  workflow_call:
+    inputs:
+      image:
+        type: string
+        required: true
+      name:
+        type: string
+        required: true
+      package-name:
+        type: string
+        required: true
+
+jobs:
+  build-qcow2-provision:
+    name: Provision runner
+    runs-on: self-hosted-small-amd64
+    outputs:
+      vmid: ${{ steps.runner.outputs.vmid }}
+      label: ${{ steps.runner.outputs.label }}
+    steps:
+      - &provision-runner
+        name: Provision ephemeral runner
+        id: runner
+        uses: maks1ms/provision-ephemeral-runner-pve@a4697cd39a2a98527bdf26af2209f67a654f8a58
+        with:
+          action: 'create'
+          pve_url: ${{ secrets.PVE_HOST }}
+          pve_node: ${{ secrets.PVE_NODE }}
+          pve_token_id: ${{ secrets.PVE_TOKEN_ID }}
+          pve_token_secret: ${{ secrets.PVE_TOKEN_SECRET }}
+          forgejo_token: ${{ secrets.RUNNER_PROVISIONER_TOKEN }}
+          pve_template_vmid: ${{ vars.PVE_TEMPLATE_VMID }}
+          label: ${{ format('build-qcow2-{0}', forgejo.run_id) }}
+
+  build-qcow2:
+    name: Build qcow2
+    needs: build-qcow2-provision
+    runs-on: ${{ needs.build-qcow2-provision.outputs.label }}
+    env:
+      HOME: /root
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install installer
+        run: |
+          apt-get update
+          apt-get install -y apt-repo qemu-img gettext
+
+          apt-repo add 'rpm https://altlinux.space/api/packages/alt-atomic/alt/group/installer-nightly/sisyphus.repo x86_64 classic'
+          apt-get update
+          apt-get install -y installer
+
+      - name: run installer to prepare disk
+        env:
+          IMAGE: ${{ inputs.image }}
+          DISK_PATH: ${{ forgejo.workspace }}/disk.img
+        run: |
+          envsubst '$IMAGE $DISK_PATH' \
+            < "$FORGEJO_WORKSPACE/files/prepare-disk-config.yml" \
+            > "$RUNNER_TEMP/prepare-disk-config.yml"
+
+          installer install "$RUNNER_TEMP/prepare-disk-config.yml"
+
+      - name: convert img to qcow2
+        env:
+          NAME: ${{ inputs.name }}
+        run: |
+          qemu-img convert -p -O qcow2 -o cluster_size=2M ./disk.img ./disk.qcow2
+
+      - name: upload disk
+        env:
+          BASE: ${{ forgejo.server_url }}/api/packages/alt-atomic/generic/${{ inputs.package-name }}
+          NAME: ${{ inputs.name }}
+          AUTH: <token>:${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          upload() {
+            curl -sS --user "$AUTH" -X DELETE "$BASE/$2" -o /dev/null
+            curl -sSf --user "$AUTH" --upload-file "$1" "$BASE/$2" -o /dev/null
+            echo "uploaded: $BASE/$2"
+          }
+
+          sha256sum ./disk.qcow2 > ./disk.qcow2.sha256
+
+          upload ./disk.qcow2         "$NAME.qcow2"
+          upload ./disk.qcow2.sha256  "$NAME.qcow2.sha256"
+
+  build-qcow2-cleanup:
+    name: Cleanup runner
+    runs-on: self-hosted-small-amd64
+    needs: [build-qcow2-provision, build-qcow2]
+    if: always() && needs.build-qcow2-provision.result != 'skipped'
+    steps:
+      - <<: *provision-runner
+        name: Cleanup ephemeral runner
+        with:
+          action: 'delete'
+          pve_url: ${{ secrets.PVE_HOST }}
+          pve_node: ${{ secrets.PVE_NODE }}
+          pve_token_id: ${{ secrets.PVE_TOKEN_ID }}
+          pve_token_secret: ${{ secrets.PVE_TOKEN_SECRET }}
+          pve_vmid: ${{ needs.build-qcow2-provision.outputs.vmid }}
