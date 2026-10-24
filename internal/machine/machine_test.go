@@ -307,3 +307,61 @@ func TestShowConfig(t *testing.T) {
 		require.Contains(t, out.String(), "net.ipv4.ip_unprivileged_port_start: \"80\"")
 	})
 }
+
+func TestDashboardSetNetwork(t *testing.T) {
+	t.Run("applies network before provisioning", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(mock.Anything, "/usr/libexec/selenite-controller/nmstate-helper", []string{"backup"}, mock.Anything).
+			Return(nil)
+		r.EXPECT().
+			Run(mock.Anything, "/usr/libexec/selenite-controller/nmstate-helper", []string{"apply"}, mock.Anything).
+			Return(nil)
+
+		// No users: the machine is not provisioned yet.
+		store := &capturingStore{loaded: &config.MachineConfig{}}
+		m := &machineManager{runner: r, store: store}
+
+		cfg := `
+network:
+  desired_state:
+    interfaces:
+      - name: dummy0
+        type: dummy
+        state: up
+`
+		err := m.DashboardSetNetwork(context.Background(), strings.NewReader(cfg), io.Discard)
+		require.NoError(t, err)
+		require.NotNil(t, store.saved)
+		require.Empty(t, store.saved.Access.Users)
+		require.Contains(t, string(store.saved.Network.DesiredState), "dummy0")
+	})
+
+	t.Run("apply error is returned and config is not saved", func(t *testing.T) {
+		r := mocks.NewMockRunner(t)
+		r.EXPECT().
+			Run(mock.Anything, "/usr/libexec/selenite-controller/nmstate-helper", []string{"backup"}, mock.Anything).
+			Return(nil)
+		r.EXPECT().
+			Run(mock.Anything, "/usr/libexec/selenite-controller/nmstate-helper", []string{"apply"}, mock.Anything).
+			Return(errors.New("boom"))
+		r.EXPECT().
+			Run(mock.Anything, "/usr/libexec/selenite-controller/nmstate-helper", []string{"restore"}, mock.Anything).
+			Return(nil)
+
+		store := &capturingStore{loaded: &config.MachineConfig{}}
+		m := &machineManager{runner: r, store: store}
+
+		cfg := `
+network:
+  desired_state:
+    interfaces:
+      - name: dummy0
+        type: dummy
+        state: up
+`
+		err := m.DashboardSetNetwork(context.Background(), strings.NewReader(cfg), io.Discard)
+		require.ErrorContains(t, err, "boom")
+		require.Nil(t, store.saved)
+	})
+}
