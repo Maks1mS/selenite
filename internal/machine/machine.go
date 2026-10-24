@@ -355,13 +355,9 @@ func (m *machineManager) DashboardSetNetwork(ctx context.Context, r io.Reader, w
 	}
 	cfg.Network = netCfg.Network
 
-	applier := config.NewApplier(&cfg, prev, m.runner, m.store)
+	applier := config.NewNetworkOnlyApplier(&cfg, prev, m.runner, m.store)
 	if err := applier.Apply(ctx); err != nil {
 		return fmt.Errorf("DashboardSetNetwork: apply: %w", err)
-	}
-
-	if err := m.store.Save(&cfg); err != nil {
-		return fmt.Errorf("DashboardSetNetwork: save config: %w", err)
 	}
 
 	return nil

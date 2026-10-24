@@ -7,6 +7,7 @@ package network
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"slices"
@@ -76,23 +77,31 @@ func (m *page) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 	case base.ActivatedMsg:
-		m.form = newNetworkForm(m)
-		m.currentConfig, m.err = m.getConfig()
+		m.reload()
 		return m, m.form.GetFocusedField().Focus()
 	}
 
 	if m.form.State == huh.StateCompleted {
+		var applyErr error
 		if m.formData.Save {
-			if err := m.applyConfig(); err != nil {
-				m.err = err
-			}
-			m.currentConfig, m.err = m.getConfig()
+			applyErr = m.applyConfig()
 		}
-		m.form = newNetworkForm(m)
+		m.reload(applyErr)
 		return m, tea.Batch(m.form.Init(), func() tea.Msg { return base.NetworkUpdateMsg{} })
 	}
 
 	return m, cmd
+}
+
+// reload rebuilds the form and the current config, keeping errs for display.
+func (m *page) reload(errs ...error) {
+	var err error
+	m.ifaces, err = m.listInterfaces()
+	errs = append(errs, err)
+	m.form = newNetworkForm(m)
+	m.currentConfig, err = m.getConfig()
+	errs = append(errs, err)
+	m.err = errors.Join(errs...)
 }
 
 func (m *page) getConfig() (string, error) {
@@ -107,9 +116,9 @@ func (m *page) getConfig() (string, error) {
 	)
 	if err != nil {
 		if stderr.Len() != 0 {
-			return "", fmt.Errorf("nmstatectl apply: %s: %w", strings.TrimSpace(stderr.String()), err)
+			return "", fmt.Errorf("get network config: %s: %w", strings.TrimSpace(stderr.String()), err)
 		}
-		return "", fmt.Errorf("nmstatectl apply: %w", err)
+		return "", fmt.Errorf("get network config: %w", err)
 	}
 
 	return stdout.String(), nil
@@ -137,9 +146,9 @@ func (m *page) applyConfig() error {
 	)
 	if err != nil {
 		if stderr.Len() != 0 {
-			return fmt.Errorf("nmstatectl apply: %s: %w", strings.TrimSpace(stderr.String()), err)
+			return fmt.Errorf("apply network config: %s: %w", strings.TrimSpace(stderr.String()), err)
 		}
-		return fmt.Errorf("nmstatectl apply: %w", err)
+		return fmt.Errorf("apply network config: %w", err)
 	}
 
 	return nil
@@ -278,7 +287,7 @@ func (m *page) View() tea.View {
 			lipgloss.NewStyle().
 				Width(midWidth).
 				Height(m.height-3).
-				Render(m.currentConfig),
+				Render(m.currentConfigView(midWidth)),
 		),
 		lipgloss.NewStyle().
 			BorderStyle(lipgloss.RoundedBorder()).
@@ -311,8 +320,20 @@ func (m *page) View() tea.View {
 	return v
 }
 
+func (m *page) currentConfigView(width int) string {
+	if m.err == nil {
+		return m.currentConfig
+	}
+	errView := lipgloss.NewStyle().
+		Width(width).
+		Foreground(lipgloss.Red).
+		Render(m.err.Error())
+	return lipgloss.JoinVertical(lipgloss.Left, errView, "", m.currentConfig)
+}
+
 func New() *page {
 	p := &page{}
+	p.ifaces, p.err = p.listInterfaces()
 	p.form = newNetworkForm(p)
 	p.formData.InterfaceName = interfaceNone
 
@@ -320,8 +341,6 @@ func New() *page {
 }
 
 func newNetworkForm(m *page) *huh.Form {
-	m.ifaces = m.listInterfaces()
-
 	ifacenames := make([]string, 0, len(m.ifaces)+1)
 	ifacenames = append(ifacenames, interfaceNone)
 	for k := range m.ifaces {
@@ -358,19 +377,17 @@ func newNetworkForm(m *page) *huh.Form {
 		WithShowHelp(false)
 }
 
-func (m *page) listInterfaces() map[string]nmstate.Interface {
+func (m *page) listInterfaces() (map[string]nmstate.Interface, error) {
 	r := runner.NewLocal()
 
 	var b bytes.Buffer
-	m.err = r.Run(context.Background(), "/usr/bin/nmstatectl", []string{"show"}, runner.WithStdout(&b))
-	if m.err != nil {
-		return nil
+	if err := r.Run(context.Background(), "/usr/bin/nmstatectl", []string{"show"}, runner.WithStdout(&b)); err != nil {
+		return nil, fmt.Errorf("list interfaces: %w", err)
 	}
 
 	var s nmstate.DesiredState
-	m.err = yaml.Unmarshal(b.Bytes(), &s)
-	if m.err != nil {
-		return nil
+	if err := yaml.Unmarshal(b.Bytes(), &s); err != nil {
+		return nil, fmt.Errorf("list interfaces: parse nmstatectl output: %w", err)
 	}
 
 	data := map[string]nmstate.Interface{}
@@ -381,5 +398,5 @@ func (m *page) listInterfaces() map[string]nmstate.Interface {
 		data[i.Name] = i
 	}
 
-	return data
+	return data, nil
 }

@@ -87,6 +87,17 @@ func NewApplier(cfg, prev *MachineConfig, r executil.Runner, s Store) *Applier {
 	}
 }
 
+// NewNetworkOnlyApplier applies only the network section. Unlike NewApplier it
+// does not validate access, so it works before provisioning.
+func NewNetworkOnlyApplier(cfg, prev *MachineConfig, r executil.Runner, s Store) *Applier {
+	return &Applier{
+		modules: []ModuleApplier{NewNetworkApplier(cfg.Network, prev.Network, r)},
+		prev:    prev,
+		cfg:     cfg,
+		store:   s,
+	}
+}
+
 func (a *Applier) Apply(ctx context.Context) error {
 	for _, m := range a.modules {
 		if err := m.Validate(ctx); err != nil {
