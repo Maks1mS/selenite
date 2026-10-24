@@ -41,7 +41,7 @@ jobs:
     with:
       image: altlinux.space/alt-atomic/selenite/cloud:${{ forgejo.ref_name }}
       name: selenite-cloud-${{ forgejo.ref_name }}-amd64
-      package-name: selenite-cloud/nightly
+      package-name: selenite-release-assets/${{ forgejo.ref_name }}
 
   release:
     needs: [meta, build, build-qcow2]
