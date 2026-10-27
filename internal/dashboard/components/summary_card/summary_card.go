@@ -19,7 +19,9 @@ import (
 const refreshInterval = 10 * time.Second
 
 type (
-	tickMsg time.Time
+	tickMsg struct {
+		generation uint64
+	}
 	dataMsg struct {
 		ip           string
 		dns          string
@@ -33,6 +35,7 @@ type Model struct {
 	dns          string
 	gateway      string
 	connectivity string
+	generation   uint64
 }
 
 func New() *Model {
@@ -44,14 +47,19 @@ func New() *Model {
 	}
 }
 
+// Init restarts polling: ticks delivered while the page is hidden are dropped.
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(fetchDataCmd(), tickCmd())
+	m.generation++
+	return tea.Batch(fetchDataCmd(), m.tickCmd())
 }
 
 func (m *Model) Update(msg tea.Msg) (*Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
-		return m, tea.Batch(fetchDataCmd(), tickCmd())
+		if msg.generation != m.generation {
+			return m, nil
+		}
+		return m, tea.Batch(fetchDataCmd(), m.tickCmd())
 	case base.NetworkUpdateMsg:
 		return m, fetchDataCmd()
 	case dataMsg:
@@ -99,9 +107,10 @@ func (m *Model) View() tea.View {
 	return v
 }
 
-func tickCmd() tea.Cmd {
-	return tea.Tick(refreshInterval, func(t time.Time) tea.Msg {
-		return tickMsg(t)
+func (m *Model) tickCmd() tea.Cmd {
+	generation := m.generation
+	return tea.Tick(refreshInterval, func(time.Time) tea.Msg {
+		return tickMsg{generation: generation}
 	})
 }
 
