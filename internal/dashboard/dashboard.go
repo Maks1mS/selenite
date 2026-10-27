@@ -8,8 +8,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"altlinux.space/alt-atomic/selenite/internal/dashboard/components/journal"
 	"altlinux.space/alt-atomic/selenite/internal/dashboard/components/menu"
 	"altlinux.space/alt-atomic/selenite/internal/dashboard/components/status"
+	"altlinux.space/alt-atomic/selenite/internal/dashboard/components/summary_card"
 	"altlinux.space/alt-atomic/selenite/internal/dashboard/pages/base"
 	"altlinux.space/alt-atomic/selenite/internal/dashboard/pages/network"
 	"altlinux.space/alt-atomic/selenite/internal/dashboard/pages/summary"
@@ -72,12 +74,30 @@ func (m *model) View() tea.View {
 	return v
 }
 
-func New() model {
+// Sources provides the data shown by the dashboard.
+type Sources struct {
+	Status  status.Source
+	Summary summary_card.Source
+	Journal journal.Reader
+	Network network.Backend
+}
+
+// SystemSources reads the data from the local machine.
+func SystemSources() Sources {
+	return Sources{
+		Status:  status.SystemSource{},
+		Summary: summary_card.SystemSource{},
+		Journal: journal.SystemReader{},
+		Network: network.SystemBackend{},
+	}
+}
+
+func New(src Sources) model {
 	return model{
-		status: status.New(),
+		status: status.New(src.Status),
 		pages: []tea.Model{
-			summary.New(),
-			network.New(),
+			summary.New(src.Summary, src.Journal),
+			network.New(src.Network),
 		},
 		bar: menu.New(
 			[]menu.Item{

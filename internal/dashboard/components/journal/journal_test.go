@@ -38,7 +38,7 @@ func TestInitRestartsPolling(t *testing.T) {
 func testInitRestartsPolling(t *testing.T, paused bool) {
 	t.Helper()
 
-	m := New()
+	m := New(nil)
 	m.SetWidth(80)
 	m.SetHeight(3)
 	require.NotNil(t, m.Init(), "initialization must start reading")
@@ -107,7 +107,7 @@ func assertReactivatedWindow(t *testing.T, m *Model, paused bool, offset int) {
 func TestPendingTickKeepsGeneration(t *testing.T) {
 	t.Parallel()
 
-	m := New()
+	m := New(nil)
 	m.Init()
 	_, tick := m.Update(entriesMsg{target: m, generation: m.generation})
 	require.NotNil(t, tick, "expected a polling timer")
@@ -120,7 +120,7 @@ func TestPendingTickKeepsGeneration(t *testing.T) {
 func TestHistoryPagingPreservesAnchor(t *testing.T) {
 	t.Parallel()
 
-	m := New()
+	m := New(nil)
 	m.SetWidth(80)
 	m.SetHeight(3)
 	m.applyEntries(entriesMsg{mode: readTail, entries: numberedEntries(maxLines+1, maxLines)})
@@ -160,7 +160,7 @@ func TestHistoryPagingPreservesAnchor(t *testing.T) {
 func TestHistoryLoadsOnceAndStopsAtJournalHead(t *testing.T) {
 	t.Parallel()
 
-	m := New()
+	m := New(nil)
 	m.SetWidth(80)
 	m.SetHeight(3)
 	m.applyEntries(entriesMsg{mode: readTail, entries: numberedEntries(10, 5)})
@@ -186,7 +186,7 @@ func TestHistoryLoadsOnceAndStopsAtJournalHead(t *testing.T) {
 func TestEndJumpsToTailAndRejectsPendingHistory(t *testing.T) {
 	t.Parallel()
 
-	m := New()
+	m := New(nil)
 	m.SetWidth(80)
 	m.SetHeight(3)
 	m.applyEntries(entriesMsg{mode: readTail, entries: numberedEntries(10, 5)})
@@ -214,7 +214,7 @@ func TestEndJumpsToTailAndRejectsPendingHistory(t *testing.T) {
 func TestEvictionKeepsWholeMultilineEntries(t *testing.T) {
 	t.Parallel()
 
-	m := New()
+	m := New(nil)
 	m.SetSize(80, 3)
 	m.applyEntries(entriesMsg{mode: readTail, entries: []entry{
 		{cursor: "1", text: strings.Repeat("line\n", maxLines-1) + "last"},
@@ -236,7 +236,7 @@ func TestEvictionKeepsWholeMultilineEntries(t *testing.T) {
 func TestWrappedNavigationAndFollow(t *testing.T) {
 	t.Parallel()
 
-	m := New()
+	m := New(nil)
 	m.SetSize(4, 2)
 	m.applyEntries(entriesMsg{mode: readTail, entries: []entry{{cursor: "1", text: "abcdefghijklmnop"}}})
 	m.atHead = true
@@ -275,7 +275,7 @@ func TestWrappedNavigationAndFollow(t *testing.T) {
 func TestReflowPreservesPausedTextPosition(t *testing.T) {
 	t.Parallel()
 
-	m := New()
+	m := New(nil)
 	m.SetSize(4, 6)
 	m.applyEntries(entriesMsg{mode: readTail, entries: []entry{
 		{cursor: "1", text: strings.Repeat("abcdefgh", 5)},
@@ -304,7 +304,7 @@ func TestReflowPreservesPausedTextPosition(t *testing.T) {
 func TestWrappedHistoryPreservesAnchor(t *testing.T) {
 	t.Parallel()
 
-	m := New()
+	m := New(nil)
 	m.SetSize(5, 3)
 	m.applyEntries(entriesMsg{mode: readTail, entries: numberedEntries(maxLines+1, maxLines)})
 	m.follow = false

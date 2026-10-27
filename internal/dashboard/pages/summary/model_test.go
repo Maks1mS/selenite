@@ -15,7 +15,7 @@ import (
 func TestActivationRestartsJournalPolling(t *testing.T) {
 	t.Parallel()
 
-	m := New()
+	m := New(nil, nil)
 	var activated base.ActivatedMsg
 
 	for range 2 {

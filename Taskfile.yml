@@ -8,7 +8,7 @@ vars:
   ADDLICENSE_BIN: go run github.com/google/addlicense@b289835c0741ba2fb92dd5f61af070e79c69a55e # v1.2.0
   ALLOWED_LICENSES: MIT,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,MPL-2.0,MPL-2.0-no-copyleft-exception
   ADDLICENSE_IGNORE: "-ignore=vendor/** -ignore=.git/** -ignore=**/*.yml -ignore=**/*.yaml"
-  MOCKERY_BIN: go run github.com/vektra/mockery/v3@061811d8857c652c7241910d3ba4e8a01dda55ff # v3.7.0
+  MOCKERY_BIN: go run github.com/vektra/mockery/v3@0ddc8e48058a948e0c085b5d929ef93b8172d0fd # v3.8.1
   VERSION: '{{.VERSION | default "dev"}}'
   GIT_COMMIT: '{{.GIT_COMMIT | default "unknown"}}'
   LDFLAGS: >-
@@ -69,6 +69,11 @@ tasks:
     desc: "Run unit tests"
     cmds:
       - go test -v ./...
+
+  test-golden-update:
+    desc: "Regenerate golden files of the dashboard TUI tests"
+    cmds:
+      - UPDATE_GOLDEN=1 go test ./internal/dashboard/...
 
   test-unit-coverage:
     desc: "Run unit tests with coverage"

@@ -1,0 +1,50 @@
+ selenite │ Selenite dev │ CPU 2x2.4GHz  12.5%, RAM 0.5/2.0 GB (25.0%), SWAP 0.0/1.0 GB (0.0%), uptime 3h25m0s
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                                              │
+│ IP: 10.0.2.15                                                                                                                                                │
+│ Gateway: 10.0.2.2                                                                                                                                            │
+│ DNS: 10.0.2.3                                                                                                                                                │
+│ Connectivity: OK                                                                                                                                             │
+│                                                                                                                                                              │
+│──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────│
+│Oct 27 12:00:00 systemd[1]: Started unit-00.service.                                                                                                          │
+│Oct 27 12:00:01 systemd[1]: Started unit-01.service.                                                                                                          │
+│Oct 27 12:00:02 systemd[1]: Started unit-02.service.                                                                                                          │
+│Oct 27 12:00:03 systemd[1]: Started unit-03.service.                                                                                                          │
+│Oct 27 12:00:04 systemd[1]: Started unit-04.service.                                                                                                          │
+│Oct 27 12:00:05 systemd[1]: Started unit-05.service.                                                                                                          │
+│Oct 27 12:00:06 systemd[1]: Started unit-06.service.                                                                                                          │
+│Oct 27 12:00:07 systemd[1]: Started unit-07.service.                                                                                                          │
+│Oct 27 12:00:08 systemd[1]: Started unit-08.service.                                                                                                          │
+│Oct 27 12:00:09 systemd[1]: Started unit-09.service.                                                                                                          │
+│Oct 27 12:00:10 systemd[1]: Started unit-10.service.                                                                                                          │
+│Oct 27 12:00:11 systemd[1]: Started unit-11.service.                                                                                                          │
+│Oct 27 12:00:12 systemd[1]: Started unit-12.service.                                                                                                          │
+│Oct 27 12:00:13 systemd[1]: Started unit-13.service.                                                                                                          │
+│Oct 27 12:00:14 systemd[1]: Started unit-14.service.                                                                                                          │
+│Oct 27 12:00:15 systemd[1]: Started unit-15.service.                                                                                                          │
+│Oct 27 12:00:16 systemd[1]: Started unit-16.service.                                                                                                          │
+│Oct 27 12:00:17 systemd[1]: Started unit-17.service.                                                                                                          │
+│Oct 27 12:00:18 systemd[1]: Started unit-18.service.                                                                                                          │
+│Oct 27 12:00:19 systemd[1]: Started unit-19.service.                                                                                                          │
+│Oct 27 12:00:20 systemd[1]: Started unit-20.service.                                                                                                          │
+│Oct 27 12:00:21 systemd[1]: Started unit-21.service.                                                                                                          │
+│Oct 27 12:00:22 systemd[1]: Started unit-22.service.                                                                                                          │
+│Oct 27 12:00:23 systemd[1]: Started unit-23.service.                                                                                                          │
+│Oct 27 12:00:24 systemd[1]: Started unit-24.service.                                                                                                          │
+│Oct 27 12:00:25 systemd[1]: Started unit-25.service.                                                                                                          │
+│Oct 27 12:00:26 systemd[1]: Started unit-26.service.                                                                                                          │
+│Oct 27 12:00:27 systemd[1]: Started unit-27.service.                                                                                                          │
+│Oct 27 12:00:28 systemd[1]: Started unit-28.service.                                                                                                          │
+│Oct 27 12:00:29 systemd[1]: Started unit-29.service.                                                                                                          │
+│                                                                                                                                                              │
+│                                                                                                                                                              │
+│                                                                                                                                                              │
+│                                                                                                                                                              │
+│                                                                                                                                                              │
+│                                                                                                                                                              │
+│                                                                                                                                                              │
+│                                                                                                                                                              │
+│                                                                                                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+[F1] Summary | [F2] Network
