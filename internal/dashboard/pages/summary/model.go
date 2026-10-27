@@ -33,7 +33,7 @@ func (m *page) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = max(0, msg.Width)
 		m.height = max(0, msg.Height)
 	case base.ActivatedMsg:
-		return m, m.journal.Init()
+		return m, tea.Batch(m.summaryCard.Init(), m.journal.Init())
 	}
 	var summaryCmd, journalCmd tea.Cmd
 	m.summaryCard, summaryCmd = m.summaryCard.Update(msg)
