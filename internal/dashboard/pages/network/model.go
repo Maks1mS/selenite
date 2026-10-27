@@ -9,14 +9,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/go-playground/validator/v10"
 	"github.com/goccy/go-yaml"
 	"go.alt-gnome.ru/x/runner"
 
@@ -30,25 +28,6 @@ const (
 
 	interfaceNone = "(none)"
 )
-
-type FormData struct {
-	Hostname      string
-	Dns           string
-	InterfaceName string
-	Kind          string
-	Address       string
-	Gateway       string
-	Save          bool
-}
-
-type FormDataNormalized struct {
-	Hostname      string   `validate:"omitempty,hostname"`
-	Dns           []string `validate:"dive,ip"`
-	InterfaceName string
-	Kind          string
-	Address       []string `validate:"dive,cidr"`
-	Gateway       string   `validate:"required_unless=Kind dhcp,omitempty,ip"`
-}
 
 type page struct {
 	width, height int
@@ -155,75 +134,7 @@ func (m *page) applyConfig() error {
 }
 
 func (m *page) buildConfig() (nmstate.SeleniteConfig, error) {
-	state := nmstate.DesiredState{}
-
-	input := FormDataNormalized{}
-	input.Hostname = m.formData.Hostname
-	input.Dns = strings.Fields(m.formData.Dns)
-	input.InterfaceName = m.formData.InterfaceName
-	input.Kind = m.formData.Kind
-	input.Address = strings.Fields(m.formData.Address)
-	input.Gateway = m.formData.Gateway
-
-	validate := validator.New(validator.WithRequiredStructEnabled())
-	err := validate.Struct(input)
-	if err != nil {
-		return nmstate.SeleniteConfig{}, fmt.Errorf("validate error: %w", err)
-	}
-
-	if input.Hostname != "" {
-		state.Hostname.Config = input.Hostname
-	}
-	if len(input.Dns) != 0 {
-		state.DNSResolver.Config.Server = input.Dns
-	}
-	if input.InterfaceName != interfaceNone {
-		iface := nmstate.Interface{
-			Name:  input.InterfaceName,
-			Type:  m.ifaces[input.InterfaceName].Type,
-			State: "up",
-			Ipv4:  nmstate.Ipv4{Enabled: true},
-		}
-
-		switch input.Kind {
-		case kindDHCP:
-			iface.Ipv4.Dhcp = true
-		case kindStatic:
-			iface.Ipv4.Address = []nmstate.Address{}
-			iface.Ipv6.Address = []nmstate.Address{}
-
-			for _, addr := range input.Address {
-				ipAddr, ipNet, err := net.ParseCIDR(addr)
-				if err != nil {
-					continue
-				}
-
-				prefixLength, _ := ipNet.Mask.Size()
-
-				address := nmstate.Address{
-					IP:           ipAddr.String(),
-					PrefixLength: prefixLength,
-				}
-
-				if ipAddr.To4() != nil {
-					iface.Ipv4.Address = append(iface.Ipv4.Address, address)
-				} else {
-					iface.Ipv6.Address = append(iface.Ipv6.Address, address)
-				}
-			}
-			state.Routes.Config = []nmstate.RoutesConfig{
-				{
-					Destination:      "0.0.0.0/0",
-					NextHopAddress:   input.Gateway,
-					NextHopInterface: input.InterfaceName,
-				},
-			}
-		}
-
-		state.Interfaces = []nmstate.Interface{iface}
-	}
-
-	return nmstate.SeleniteConfig{Network: nmstate.NetworkConfig{DesiredState: state}}, nil
+	return m.formData.ToSeleniteConfig(m.ifaces)
 }
 
 func (m *page) buildConfigString() (string, error) {
