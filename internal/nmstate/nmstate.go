@@ -37,20 +37,21 @@ type Interface struct {
 	Name  string `yaml:"name"`
 	Type  string `yaml:"type"`
 	State string `yaml:"state"`
-	Ipv4  Ipv4   `yaml:"ipv4,omitempty"`
-	Ipv6  Ipv6   `yaml:"ipv6,omitempty"`
+	Ipv4  Ipv4   `yaml:"ipv4"`
+	Ipv6  Ipv6   `yaml:"ipv6"`
 }
 
 type Ipv4 struct {
 	Address []Address `yaml:"address"`
-	Dhcp    bool      `yaml:"dhcp,omitempty"`
+	Dhcp    *bool     `yaml:"dhcp,omitempty"`
 	Enabled bool      `yaml:"enabled"`
 }
 
 type Ipv6 struct {
-	Address []Address `yaml:"address"`
-	Dhcp    bool      `yaml:"dhcp,omitempty"`
-	Enabled bool      `yaml:"enabled"`
+	Address  []Address `yaml:"address"`
+	Dhcp     *bool     `yaml:"dhcp,omitempty"`
+	Autoconf *bool     `yaml:"autoconf,omitempty"`
+	Enabled  bool      `yaml:"enabled"`
 }
 
 type Address struct {
