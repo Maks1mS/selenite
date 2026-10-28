@@ -6,14 +6,9 @@ package status
 
 import (
 	"fmt"
-	"math"
-	"os"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/shirou/gopsutil/v4/cpu"
-	"github.com/shirou/gopsutil/v4/host"
-	"github.com/shirou/gopsutil/v4/mem"
 
 	"altlinux.space/alt-atomic/selenite/internal/dashboard/pages/base"
 	"altlinux.space/alt-atomic/selenite/internal/version"
@@ -25,72 +20,37 @@ const refreshInterval = 1 * time.Second
 type tickMsg time.Time
 
 // statsMsg carries the results of a CPU/RAM measurement.
-type statsMsg struct {
-	cpuPercent float64
-	memPercent float64
-	memTotal   uint64
-	memUsed    uint64
-	swapTotal  uint64
-	swapUsed   uint64
-	swapPct    float64
-	uptime     time.Duration
-	hostname   string
-}
+type statsMsg Stats
 
 type Model struct {
-	hostname   string
-	osInfo     string
-	cpuPct     float64
-	cpuCores   int
-	cpuFreqGHz float64
-	memPct     float64
-	memTotal   uint64
-	memUsed    uint64
-	swapPct    float64
-	swapTotal  uint64
-	swapUsed   uint64
-	uptime     time.Duration
+	source Source
+
+	osInfo string
+	cpu    CPUInfo
+	stats  Stats
 }
 
-func New() *Model {
-	cores, err := cpu.Counts(true)
-	if err != nil || cores == 0 {
-		cores = 1
-	}
-
-	var freqGHz float64
-	if infos, err := cpu.Info(); err == nil && len(infos) > 0 {
-		freqGHz = infos[0].Mhz / 1000
-	}
-
+func New(source Source) *Model {
 	return &Model{
-		osInfo:     getOSInfo(),
-		cpuCores:   cores,
-		cpuFreqGHz: freqGHz,
+		source: source,
+		osInfo: getOSInfo(),
+		cpu:    source.CPUInfo(),
 	}
 }
 
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(fetchStatsCmd(), tickCmd())
+	return tea.Batch(m.fetchStatsCmd(), tickCmd())
 }
 
 func (m *Model) Update(msg tea.Msg) (*Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
-		return m, tea.Batch(fetchStatsCmd(), tickCmd())
+		return m, tea.Batch(m.fetchStatsCmd(), tickCmd())
 	case statsMsg:
-		m.cpuPct = msg.cpuPercent
-		m.memPct = msg.memPercent
-		m.memTotal = msg.memTotal
-		m.memUsed = msg.memUsed
-		m.swapPct = msg.swapPct
-		m.swapTotal = msg.swapTotal
-		m.swapUsed = msg.swapUsed
-		m.uptime = msg.uptime
-		m.hostname = msg.hostname
+		m.stats = Stats(msg)
 		return m, nil
 	case base.NetworkUpdateMsg:
-		m.hostname = getHostname()
+		m.stats.Hostname = m.source.Hostname()
 		return m, nil
 	}
 	return m, nil
@@ -99,13 +59,13 @@ func (m *Model) Update(msg tea.Msg) (*Model, tea.Cmd) {
 func (m *Model) View() tea.View {
 	line := fmt.Sprintf(
 		" %s │ %s │ CPU %s %5.1f%%, RAM %s%s, uptime %s ",
-		m.hostname,
+		m.stats.Hostname,
 		m.osInfo,
-		formatCPUInfo(m.cpuCores, m.cpuFreqGHz),
-		m.cpuPct,
-		formatMem(m.memUsed, m.memTotal, m.memPct),
-		formatSwapPart(m.swapTotal, m.swapUsed, m.swapPct),
-		formatUptime(m.uptime),
+		formatCPUInfo(m.cpu.Cores, m.cpu.FreqGHz),
+		m.stats.CPUPercent,
+		formatMem(m.stats.MemUsed, m.stats.MemTotal, m.stats.MemPercent),
+		formatSwapPart(m.stats.SwapTotal, m.stats.SwapUsed, m.stats.SwapPercent),
+		formatUptime(m.stats.Uptime),
 	)
 	return tea.NewView(line)
 }
@@ -116,58 +76,10 @@ func tickCmd() tea.Cmd {
 	})
 }
 
-func fetchStatsCmd() tea.Cmd {
+func (m *Model) fetchStatsCmd() tea.Cmd {
 	return func() tea.Msg {
-		var cpuPct float64
-		if percentages, err := cpu.Percent(0, false); err == nil && len(percentages) > 0 {
-			cpuPct = percentages[0]
-		}
-
-		var memPct float64
-		var memTotal, memUsed uint64
-		if vm, err := mem.VirtualMemory(); err == nil {
-			memPct = vm.UsedPercent
-			memTotal = vm.Total
-			memUsed = vm.Used
-		}
-
-		var swapPct float64
-		var swapTotal, swapUsed uint64
-		if sw, err := mem.SwapMemory(); err == nil {
-			swapTotal = sw.Total
-			swapUsed = sw.Used
-			swapPct = sw.UsedPercent
-		}
-
-		var uptime time.Duration
-		if secs, err := host.Uptime(); err == nil {
-			if secs > math.MaxInt64/uint64(time.Second) {
-				uptime = time.Duration(math.MaxInt64)
-			} else {
-				uptime = time.Duration(secs) * time.Second
-			}
-		}
-
-		return statsMsg{
-			cpuPercent: cpuPct,
-			memPercent: memPct,
-			memTotal:   memTotal,
-			memUsed:    memUsed,
-			swapPct:    swapPct,
-			swapTotal:  swapTotal,
-			swapUsed:   swapUsed,
-			uptime:     uptime,
-			hostname:   getHostname(),
-		}
+		return statsMsg(m.source.Stats())
 	}
-}
-
-func getHostname() string {
-	h, err := os.Hostname()
-	if err != nil {
-		return "unknown"
-	}
-	return h
 }
 
 func getOSInfo() string {

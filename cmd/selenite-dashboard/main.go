@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	m := dashboard.New()
+	m := dashboard.New(dashboard.SystemSources())
 	p := tea.NewProgram(&m)
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)

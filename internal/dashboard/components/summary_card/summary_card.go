@@ -13,7 +13,6 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"altlinux.space/alt-atomic/selenite/internal/dashboard/pages/base"
-	"altlinux.space/alt-atomic/selenite/internal/net"
 )
 
 const refreshInterval = 10 * time.Second
@@ -22,35 +21,23 @@ type (
 	tickMsg struct {
 		generation uint64
 	}
-	dataMsg struct {
-		ip           string
-		dns          string
-		gateway      string
-		connectivity string
-	}
+	dataMsg Summary
 )
 
 type Model struct {
-	ip           string
-	dns          string
-	gateway      string
-	connectivity string
-	generation   uint64
+	source     Source
+	data       Summary
+	generation uint64
 }
 
-func New() *Model {
-	return &Model{
-		ip:           "",
-		dns:          "",
-		gateway:      "",
-		connectivity: "",
-	}
+func New(source Source) *Model {
+	return &Model{source: source}
 }
 
 // Init restarts polling: ticks delivered while the page is hidden are dropped.
 func (m *Model) Init() tea.Cmd {
 	m.generation++
-	return tea.Batch(fetchDataCmd(), m.tickCmd())
+	return tea.Batch(m.fetchDataCmd(), m.tickCmd())
 }
 
 func (m *Model) Update(msg tea.Msg) (*Model, tea.Cmd) {
@@ -59,14 +46,11 @@ func (m *Model) Update(msg tea.Msg) (*Model, tea.Cmd) {
 		if msg.generation != m.generation {
 			return m, nil
 		}
-		return m, tea.Batch(fetchDataCmd(), m.tickCmd())
+		return m, tea.Batch(m.fetchDataCmd(), m.tickCmd())
 	case base.NetworkUpdateMsg:
-		return m, fetchDataCmd()
+		return m, m.fetchDataCmd()
 	case dataMsg:
-		m.ip = msg.ip
-		m.gateway = msg.gateway
-		m.connectivity = msg.connectivity
-		m.dns = msg.dns
+		m.data = Summary(msg)
 		return m, nil
 	}
 	return m, nil
@@ -80,13 +64,13 @@ var (
 
 func (m *Model) View() tea.View {
 	var connectivity string
-	switch m.connectivity {
+	switch m.data.Connectivity {
 	case "OK":
-		connectivity = successStyle.Render(m.connectivity)
+		connectivity = successStyle.Render(m.data.Connectivity)
 	case "DOWN":
-		connectivity = errorStyle.Render(m.connectivity)
+		connectivity = errorStyle.Render(m.data.Connectivity)
 	default:
-		connectivity = warningStyle.Render(m.connectivity)
+		connectivity = warningStyle.Render(m.data.Connectivity)
 	}
 
 	v := tea.NewView(
@@ -96,9 +80,9 @@ func (m *Model) View() tea.View {
 			Render(
 				lipgloss.JoinVertical(
 					lipgloss.Left,
-					fmt.Sprintf("IP: %s", m.ip),
-					fmt.Sprintf("Gateway: %s", m.gateway),
-					fmt.Sprintf("DNS: %s", m.dns),
+					fmt.Sprintf("IP: %s", strings.Join(m.data.IPs, ", ")),
+					fmt.Sprintf("Gateway: %s", m.data.Gateway),
+					fmt.Sprintf("DNS: %s", strings.Join(m.data.DNS, ", ")),
 					fmt.Sprintf("Connectivity: %s", connectivity),
 				),
 			),
@@ -114,15 +98,8 @@ func (m *Model) tickCmd() tea.Cmd {
 	})
 }
 
-func fetchDataCmd() tea.Cmd {
+func (m *Model) fetchDataCmd() tea.Cmd {
 	return func() tea.Msg {
-		ips, _ := net.ListRealIPs()
-		dns, _ := net.ListDns()
-		return dataMsg{
-			ip:           strings.Join(ips, ", "),
-			dns:          strings.Join(dns, ", "),
-			gateway:      net.DefaultGateway(),
-			connectivity: net.Connectivity(),
-		}
+		return dataMsg(m.source.Summary())
 	}
 }

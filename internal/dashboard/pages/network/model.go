@@ -5,18 +5,15 @@
 package network
 
 import (
-	"bytes"
-	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
-	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/goccy/go-yaml"
-	"go.alt-gnome.ru/x/runner"
 
 	"altlinux.space/alt-atomic/selenite/internal/dashboard/pages/base"
 	"altlinux.space/alt-atomic/selenite/internal/nmstate"
@@ -30,6 +27,8 @@ const (
 )
 
 type page struct {
+	backend Backend
+
 	width, height int
 	err           error
 
@@ -75,32 +74,12 @@ func (m *page) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // reload rebuilds the form and the current config, keeping errs for display.
 func (m *page) reload(errs ...error) {
 	var err error
-	m.ifaces, err = m.listInterfaces()
+	m.ifaces, err = m.backend.ListInterfaces()
 	errs = append(errs, err)
 	m.form = newNetworkForm(m)
-	m.currentConfig, err = m.getConfig()
+	m.currentConfig, err = m.backend.CurrentConfig()
 	errs = append(errs, err)
 	m.err = errors.Join(errs...)
-}
-
-func (m *page) getConfig() (string, error) {
-	r := runner.NewLocal()
-	var stdout, stderr bytes.Buffer
-	err := r.Run(
-		context.Background(),
-		"/usr/libexec/selenite-controller/selenite-dashboard-helper",
-		[]string{"_dashboard-get-network"},
-		runner.WithStdout(&stdout),
-		runner.WithStderr(&stderr),
-	)
-	if err != nil {
-		if stderr.Len() != 0 {
-			return "", fmt.Errorf("get network config: %s: %w", strings.TrimSpace(stderr.String()), err)
-		}
-		return "", fmt.Errorf("get network config: %w", err)
-	}
-
-	return stdout.String(), nil
 }
 
 func (m *page) applyConfig() error {
@@ -108,28 +87,9 @@ func (m *page) applyConfig() error {
 	if err != nil {
 		return err
 	}
-
-	b, err := yaml.Marshal(config)
-	if err != nil {
-		return fmt.Errorf("yaml.Marshal: %w", err)
-	}
-
-	r := runner.NewLocal()
-	var stderr bytes.Buffer
-	err = r.Run(
-		context.Background(),
-		"/usr/libexec/selenite-controller/selenite-dashboard-helper",
-		[]string{"_dashboard-set-network"},
-		runner.WithStdin(bytes.NewBuffer(b)),
-		runner.WithStderr(&stderr),
-	)
-	if err != nil {
-		if stderr.Len() != 0 {
-			return fmt.Errorf("apply network config: %s: %w", strings.TrimSpace(stderr.String()), err)
-		}
+	if err := m.backend.ApplyConfig(config); err != nil {
 		return fmt.Errorf("apply network config: %w", err)
 	}
-
 	return nil
 }
 
@@ -242,9 +202,9 @@ func (m *page) currentConfigView(width int) string {
 	return lipgloss.JoinVertical(lipgloss.Left, errView, "", m.currentConfig)
 }
 
-func New() *page {
-	p := &page{}
-	p.ifaces, p.err = p.listInterfaces()
+func New(backend Backend) *page {
+	p := &page{backend: backend}
+	p.ifaces, p.err = backend.ListInterfaces()
 	p.form = newNetworkForm(p)
 	p.formData.InterfaceName = interfaceNone
 
@@ -254,9 +214,7 @@ func New() *page {
 func newNetworkForm(m *page) *huh.Form {
 	ifacenames := make([]string, 0, len(m.ifaces)+1)
 	ifacenames = append(ifacenames, interfaceNone)
-	for k := range m.ifaces {
-		ifacenames = append(ifacenames, k)
-	}
+	ifacenames = append(ifacenames, slices.Sorted(maps.Keys(m.ifaces))...)
 
 	return huh.NewForm(
 		huh.NewGroup(
@@ -286,28 +244,4 @@ func newNetworkForm(m *page) *huh.Form {
 		WithTheme(huh.ThemeFunc(huh.ThemeBase)).
 		WithLayout(huh.LayoutStack).
 		WithShowHelp(false)
-}
-
-func (m *page) listInterfaces() (map[string]nmstate.Interface, error) {
-	r := runner.NewLocal()
-
-	var b bytes.Buffer
-	if err := r.Run(context.Background(), "/usr/bin/nmstatectl", []string{"show"}, runner.WithStdout(&b)); err != nil {
-		return nil, fmt.Errorf("list interfaces: %w", err)
-	}
-
-	var s nmstate.DesiredState
-	if err := yaml.Unmarshal(b.Bytes(), &s); err != nil {
-		return nil, fmt.Errorf("list interfaces: parse nmstatectl output: %w", err)
-	}
-
-	data := map[string]nmstate.Interface{}
-	for _, i := range s.Interfaces {
-		if slices.Contains([]string{"linux-bridge", "loopback", "tun", "veth"}, i.Type) {
-			continue
-		}
-		data[i.Name] = i
-	}
-
-	return data, nil
 }
