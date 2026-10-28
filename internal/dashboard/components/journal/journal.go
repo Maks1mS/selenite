@@ -5,21 +5,15 @@
 package journal
 
 import (
-	"errors"
-	"fmt"
-	"math"
-	"runtime"
 	"slices"
 	"strings"
 	"time"
-	"unicode"
 	"unicode/utf8"
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/coreos/go-systemd/v22/sdjournal"
 )
 
 const (
@@ -29,6 +23,7 @@ const (
 )
 
 type Model struct {
+	reader         Reader
 	viewport       viewport.Model
 	entries        []entry
 	lines          []string
@@ -82,12 +77,12 @@ type entriesMsg struct {
 	err        error
 }
 
-func New() *Model {
+func New(reader Reader) *Model {
 	vp := viewport.New()
 	vp.FillHeight = true
 	vp.SetHorizontalStep(0)
 
-	return &Model{viewport: vp, follow: true}
+	return &Model{reader: reader, viewport: vp, follow: true}
 }
 
 func (m *Model) Init() tea.Cmd {
@@ -458,188 +453,20 @@ func (m *Model) readCmd(mode readMode) tea.Cmd {
 	generation := m.generation
 
 	return func() tea.Msg {
-		msg := readEntries(cursor, mode)
-		msg.target = m
-		msg.generation = generation
+		records, more, err := m.reader.Read(cursor, mode == readOlder)
 
-		return msg
-	}
-}
-
-// Each command owns its journal handle, including its OS thread. Reopening by
-// cursor avoids a persistent goroutine or descriptor requiring parent cleanup.
-func readEntries(cursor string, mode readMode) entriesMsg {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-
-	result := entriesMsg{mode: mode}
-	reader, err := sdjournal.NewJournal()
-	if err != nil {
-		result.err = fmt.Errorf("open journal: %w", err)
-
-		return result
-	}
-	defer func() { _ = reader.Close() }()
-
-	if err := applyFilters(reader); err != nil {
-		result.err = fmt.Errorf("filter journal: %w", err)
-		return result
-	}
-
-	available, err := seek(reader, cursor, mode)
-	if err != nil {
-		result.err = fmt.Errorf("seek journal: %w", err)
-
-		return result
-	}
-
-	step := reader.Next
-	if mode == readOlder {
-		step = reader.Previous
-	}
-
-	for count := 0; available > 0 && count < batchSize; count++ {
-		journalEntry, entryErr := reader.GetEntry()
-		if entryErr != nil {
-			result.err = fmt.Errorf("read journal: %w", entryErr)
-
-			break
+		entries := make([]entry, len(records))
+		for i, r := range records {
+			entries[i] = entry{cursor: r.Cursor, text: r.Text}
 		}
 
-		result.entries = append(result.entries, entry{
-			cursor: journalEntry.Cursor,
-			text:   formatEntry(journalEntry),
-		})
-
-		available, err = step()
-		if err != nil {
-			result.err = fmt.Errorf("advance journal: %w", err)
-
-			break
+		return entriesMsg{
+			target:     m,
+			generation: generation,
+			mode:       mode,
+			entries:    entries,
+			more:       more,
+			err:        err,
 		}
 	}
-
-	if mode == readOlder {
-		slices.Reverse(result.entries)
-	}
-
-	result.more = available > 0
-
-	return result
-}
-
-func seek(reader *sdjournal.Journal, cursor string, mode readMode) (uint64, error) {
-	if cursor == "" {
-		if err := reader.SeekTail(); err != nil {
-			return 0, fmt.Errorf("seek tail: %w", err)
-		}
-
-		available, err := reader.PreviousSkip(batchSize)
-		if err != nil {
-			return 0, fmt.Errorf("skip recent entries: %w", err)
-		}
-
-		return available, nil
-	}
-
-	if err := reader.SeekCursor(cursor); err != nil {
-		return 0, fmt.Errorf("seek cursor: %w", err)
-	}
-
-	step := reader.Next
-	if mode == readOlder {
-		step = reader.Previous
-	}
-
-	available, err := step()
-	if err != nil {
-		return available, fmt.Errorf("advance to cursor: %w", err)
-	}
-
-	if available == 0 {
-		return available, nil
-	}
-
-	// SeekCursor is approximate after vacuum/rotation. Only skip an entry if
-	// it is the one already displayed, not its nearest surviving neighbor.
-	if err := reader.TestCursor(cursor); err != nil {
-		if errors.Is(err, sdjournal.ErrNoTestCursor) {
-			return available, nil
-		}
-
-		return 0, fmt.Errorf("test cursor: %w", err)
-	}
-
-	available, err = step()
-	if err != nil {
-		return available, fmt.Errorf("skip current entry: %w", err)
-	}
-
-	return available, nil
-}
-
-func formatEntry(entry *sdjournal.JournalEntry) string {
-	source := entry.Fields["SYSLOG_IDENTIFIER"]
-	if source == "" {
-		source = entry.Fields["_SYSTEMD_UNIT"]
-	}
-
-	if source == "" {
-		source = entry.Fields["_COMM"]
-	}
-
-	if source == "" {
-		source = "journal"
-	}
-
-	if pid := entry.Fields["_PID"]; pid != "" {
-		source += "[" + pid + "]"
-	}
-
-	return fmt.Sprintf("%s %s: %s",
-		journalTime(entry.RealtimeTimestamp).Format("Jan 02 15:04:05"),
-		strings.ReplaceAll(sanitize(source), "\n", " "),
-		sanitize(entry.Fields["MESSAGE"]),
-	)
-}
-
-// journalTime converts a journal timestamp in microseconds since the Unix
-// epoch, clamping to the int64 range to avoid an overflow conversion.
-func journalTime(micros uint64) time.Time {
-	if micros > math.MaxInt64 {
-		micros = math.MaxInt64
-	}
-
-	return time.UnixMicro(int64(micros))
-}
-
-// Journal fields are untrusted text, not terminal instructions.
-func sanitize(text string) string {
-	text = strings.ReplaceAll(ansi.Strip(text), "\r\n", "\n")
-	text = strings.ReplaceAll(text, "\t", "    ")
-
-	return strings.Map(func(r rune) rune {
-		if r != '\n' && unicode.IsControl(r) {
-			return -1
-		}
-
-		return r
-	}, text)
-}
-
-func applyFilters(reader *sdjournal.Journal) error {
-	transports := []string{"kernel", "syslog", "driver"}
-	for i, t := range transports {
-		if i > 0 {
-			if err := reader.AddDisjunction(); err != nil {
-				return fmt.Errorf("add disjunction: %w", err)
-			}
-		}
-
-		if err := reader.AddMatch("_TRANSPORT=" + t); err != nil {
-			return fmt.Errorf("add match: %w", err)
-		}
-	}
-
-	return nil
 }

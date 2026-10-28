@@ -36,3 +36,39 @@ packages:
       pkgname: mocks
     interfaces:
       Context:
+  altlinux.space/alt-atomic/selenite/internal/dashboard/components/status:
+    config:
+      dir: "internal/dashboard/mocks"
+      filename: "mock_status.go"
+      pkgname: mocks
+    interfaces:
+      Source:
+        config:
+          structname: MockStatusSource
+  altlinux.space/alt-atomic/selenite/internal/dashboard/components/summary_card:
+    config:
+      dir: "internal/dashboard/mocks"
+      filename: "mock_summary_card.go"
+      pkgname: mocks
+    interfaces:
+      Source:
+        config:
+          structname: MockSummarySource
+  altlinux.space/alt-atomic/selenite/internal/dashboard/components/journal:
+    config:
+      dir: "internal/dashboard/mocks"
+      filename: "mock_journal.go"
+      pkgname: mocks
+    interfaces:
+      Reader:
+        config:
+          structname: MockJournalReader
+  altlinux.space/alt-atomic/selenite/internal/dashboard/pages/network:
+    config:
+      dir: "internal/dashboard/mocks"
+      filename: "mock_network.go"
+      pkgname: mocks
+    interfaces:
+      Backend:
+        config:
+          structname: MockNetworkBackend

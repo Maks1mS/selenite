@@ -1,0 +1,50 @@
+ selenite │ Selenite dev │ CPU 2x2.4GHz  12.5%, RAM 0.5/2.0 GB (25.0%), SWAP 0.0/1.0 GB (0.0%), uptime 3h25m0s
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│  Hostname                                         │                   Current config                   │                     New config                      │
+│  > node1                                          │────────────────────────────────────────────────────│──────────────────────────────────────────────────── │
+│                                                   │network:                                            │network:                                             │
+│  DNS Servers                                      │  desired_state:                                    │  desired_state:                                     │
+│  > 1.1.1.1                                        │    interfaces:                                     │    hostname:                                        │
+│                                                   │    - name: eth0                                    │      config: node1                                  │
+│  Interface                                        │      type: ethernet                                │    dns-resolver:                                    │
+│    (none)                                         │      state: up                                     │      config:                                        │
+│  > eth0                                           │      ipv4:                                         │        server:                                      │
+│    eth1                                           │        enabled: true                               │        - 1.1.1.1                                    │
+│                                                   │        dhcp: true                                  │    interfaces:                                      │
+│  Address mode                                     │                                                    │    - name: eth0                                     │
+│    DHCP                                           │                                                    │      type: ethernet                                 │
+│  > Static                                         │                                                    │      state: up                                      │
+│                                                   │                                                    │      ipv4:                                          │
+│  Addresses                                        │                                                    │        address:                                     │
+│  > 192.168.1.10/24                                │                                                    │        - ip: 192.168.1.10                           │
+│                                                   │                                                    │          prefix-length: 24                          │
+│  Gateway                                          │                                                    │        dhcp: false                                  │
+│  > 192.168.1.1                                    │                                                    │        enabled: true                                │
+│                                                   │                                                    │      ipv6:                                          │
+│┃ Apply configuration?                             │                                                    │        address: []                                  │
+│┃                                                  │                                                    │        enabled: false                               │
+│┃   Save     Cancel                                │                                                    │    routes:                                          │
+│                                                   │                                                    │      config:                                        │
+│                                                   │                                                    │      - destination: 0.0.0.0/0                       │
+│                                                   │                                                    │        next-hop-address: 192.168.1.1                │
+│                                                   │                                                    │        next-hop-interface: eth0                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+│                                                   │                                                    │                                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+[F1] Summary | [F2] Network

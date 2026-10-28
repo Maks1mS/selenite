@@ -13,7 +13,7 @@ import (
 func TestInitRestartsPolling(t *testing.T) {
 	t.Parallel()
 
-	m := New()
+	m := New(nil)
 	require.NotNil(t, m.Init())
 	stale := tickMsg{generation: m.generation}
 

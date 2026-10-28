@@ -90,9 +90,9 @@ func (m *page) View() tea.View {
 	return v
 }
 
-func New() *page {
+func New(summary summary_card.Source, journalReader journal.Reader) *page {
 	return &page{
-		summaryCard: summary_card.New(),
-		journal:     journal.New(),
+		summaryCard: summary_card.New(summary),
+		journal:     journal.New(journalReader),
 	}
 }
