@@ -45,6 +45,9 @@ modules:
     body:
       targets:
         - selenite-controller.service
+        - selenite-kmsg-redirect.service
+        - selenite-console-log.service
+        - selenite-serial-log.service
       enabled: true
 
   - name: Set branding

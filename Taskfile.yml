@@ -19,6 +19,7 @@ vars:
     - selenite-controller:usr/bin/selenite-controller
     - selenite-dashboard:usr/bin/selenite-dashboard
     - selenite-dashboard-helper:usr/libexec/selenite-controller/selenite-dashboard-helper
+    - selenite-vt-helper:usr/libexec/selenite-controller/selenite-vt-helper
     - podman-compose-helper:usr/libexec/selenite-controller/podman-compose-helper
     - podman-secret-helper:usr/libexec/selenite-controller/podman-secret-helper
     - podman-volume-helper:usr/libexec/selenite-controller/podman-volume-helper

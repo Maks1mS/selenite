@@ -33,7 +33,7 @@ type Reader interface {
 	Read(cursor string, older bool) (records []Record, more bool, err error)
 }
 
-// SystemReader reads kernel and syslog messages from the systemd journal.
+// SystemReader reads system messages from the systemd journal.
 type SystemReader struct{}
 
 // Each call owns its journal handle, including its OS thread. Reopening by
@@ -190,17 +190,29 @@ func sanitize(text string) string {
 	}, text)
 }
 
+// filterGroups are OR-ed groups of AND-ed matches. The console log units show
+// the same records, see selenite-console-log.service.
+var filterGroups = [][]string{
+	{"_TRANSPORT=kernel"},
+	{"_TRANSPORT=syslog"},
+	{"_TRANSPORT=driver"},
+	{"_PID=1"},
+	// Podman events from the controller cgroup use _TRANSPORT=journal and are left out.
+	{"_SYSTEMD_UNIT=selenite-controller.service", "_TRANSPORT=stdout"},
+}
+
 func applyFilters(reader *sdjournal.Journal) error {
-	transports := []string{"kernel", "syslog", "driver"}
-	for i, t := range transports {
+	for i, group := range filterGroups {
 		if i > 0 {
 			if err := reader.AddDisjunction(); err != nil {
 				return fmt.Errorf("add disjunction: %w", err)
 			}
 		}
 
-		if err := reader.AddMatch("_TRANSPORT=" + t); err != nil {
-			return fmt.Errorf("add match: %w", err)
+		for _, match := range group {
+			if err := reader.AddMatch(match); err != nil {
+				return fmt.Errorf("add match: %w", err)
+			}
 		}
 	}
 

@@ -1,0 +1,14 @@
+[Unit]
+Description=Redirect kernel messages to tty1
+DefaultDependencies=no
+After=systemd-vconsole-setup.service
+Before=sysinit.target
+ConditionPathExists=/dev/tty0
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/selenite-controller/selenite-vt-helper kmsg-redirect 1
+
+[Install]
+WantedBy=sysinit.target

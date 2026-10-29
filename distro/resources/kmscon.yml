@@ -6,9 +6,17 @@ modules:
         - getty@.service
       enabled: false
 
-  - name: Enable kmsconvt
-    type: systemd
+  # systemd-getty-generator starts serial-getty@ttyS0 for console=ttyS0 on its own.
+  - name: Disable serial getty
+    type: shell
     body:
-      targets:
-        - kmsconvt@.service
-      enabled: true
+      command: |
+        systemctl mask serial-getty@.service
+
+  # Enabling kmsconvt@.service would also alias it as autovt@ and start it on tty1.
+  - name: Run kmscon on tty2 only
+    type: shell
+    body:
+      command: |
+        mkdir -p /usr/lib/systemd/system/getty.target.wants
+        ln -sf ../kmsconvt@.service /usr/lib/systemd/system/getty.target.wants/kmsconvt@tty2.service
