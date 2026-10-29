@@ -1,0 +1,22 @@
+[Unit]
+Description=Show system logs on ttyS0
+BindsTo=dev-ttyS0.device
+After=dev-ttyS0.device
+
+[Service]
+# 8250 registers ttyS0 even without a UART. Its type is then 0 and opening it fails.
+ExecCondition=/bin/sh -c 'read -r type < /sys/class/tty/ttyS0/type && [ "$$type" != 0 ]'
+# Same records as the dashboard journal. Kernel and systemd messages reach ttyS0 directly.
+# Container output and podman events use _TRANSPORT=journal and are left out.
+ExecStart=/usr/bin/journalctl --follow --boot --no-pager --quiet --output=short-monotonic \
+    _TRANSPORT=syslog _TRANSPORT=driver + _SYSTEMD_UNIT=selenite-controller.service _TRANSPORT=stdout
+StandardOutput=tty
+StandardError=journal
+TTYPath=/dev/ttyS0
+DynamicUser=yes
+SupplementaryGroups=systemd-journal
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

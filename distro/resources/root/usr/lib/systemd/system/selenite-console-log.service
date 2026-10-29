@@ -1,0 +1,20 @@
+[Unit]
+Description=Show system logs on tty1
+After=selenite-kmsg-redirect.service
+ConditionPathExists=/dev/tty1
+
+[Service]
+# Same records as the dashboard journal. Kernel messages reach tty1 directly.
+# Container output and podman events use _TRANSPORT=journal and are left out.
+ExecStart=/usr/bin/journalctl --follow --boot --no-pager --quiet --output=short-monotonic \
+    _TRANSPORT=syslog _TRANSPORT=driver + _PID=1 + _SYSTEMD_UNIT=selenite-controller.service _TRANSPORT=stdout
+StandardOutput=tty
+StandardError=journal
+TTYPath=/dev/tty1
+DynamicUser=yes
+SupplementaryGroups=systemd-journal
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
