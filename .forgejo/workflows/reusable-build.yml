@@ -61,7 +61,7 @@ jobs:
           echo "args=$ARGS" >> "$GITHUB_OUTPUT"
 
       - name: Build and push image
-        uses: alt-atomic/actions/build-and-push@ba5ed9ae611ff7bd44ff701296a2203c181b9ce4
+        uses: alt-atomic/actions/build-and-push@a4813b2012fa5d0a4ed4f4f897f5eebd1f299152
         with:
           image-name: alt-atomic/selenite/cloud/amd64
           image-tag: ${{ inputs.version }}
