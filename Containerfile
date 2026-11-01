@@ -42,10 +42,5 @@ RUN chown root:_selenite-controller /usr/libexec/selenite-controller/* && \
     chmod 4750 /usr/libexec/selenite-controller/* && \
     chmod 750 /usr/bin/selenite-dashboard
 
-FROM altlinux.space/alt-atomic/sbom-tool:v0.2.0@sha256:7403d01ad02d80c2948944bf30e921d815e7b0843071e76b440eb707c09cbf5d AS sbom
-RUN --mount=type=bind,from=root,source=/,target=/rootfs,rw generate-sbom
-
-FROM root AS final
-COPY --from=sbom /sbom.cdx.json /usr/share/doc/atomic-sbom.cdx.json
 WORKDIR /
 CMD ["/sbin/init"]
