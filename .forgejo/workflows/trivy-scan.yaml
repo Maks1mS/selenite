@@ -50,8 +50,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: cloud
-            image: altlinux.space/alt-atomic/selenite/cloud:nightly
+          - name: cloud/amd64
+            image: altlinux.space/alt-atomic/selenite/cloud/amd64:nightly
 
     steps:
       - *checkout
