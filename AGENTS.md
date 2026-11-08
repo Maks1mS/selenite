@@ -18,7 +18,8 @@ The project is written in Go. The main component is `selenite-controller`, a dae
   - `access/` — RBAC (Casbin-based)
   - `infra/` — infrastructure helpers (secrets, volumes, networks)
   - `app/` — CLI bootstrap for `selenite-controller`
-- `tests/` — integration and E2E tests
+- `tests/` — integration and E2E tests (E2E plumbing lives in
+  `tests/e2e/internal/e2etest`)
 - `distro/` — OS image build recipes
 - `scripts/` — helper scripts
 

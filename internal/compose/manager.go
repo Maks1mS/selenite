@@ -5,12 +5,14 @@
 package compose
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"altlinux.space/alt-atomic/selenite/internal/executil"
 )
@@ -20,6 +22,8 @@ var BaseStackDir = "/var/lib/selenite-podman-executor"
 const (
 	StacksSubdir = "stacks"
 	ExecutorBin  = "/usr/libexec/selenite-controller/podman-compose-helper"
+
+	storageHelperBin = "/usr/libexec/selenite-controller/storage-helper"
 )
 
 type Manager struct {
@@ -45,8 +49,19 @@ func (m *Manager) run(ctx context.Context, w io.Writer, workDir string, args ...
 	return nil
 }
 
+func (m *Manager) checkStorageMounts(ctx context.Context) error {
+	var buf bytes.Buffer
+	if err := m.runner.Run(ctx, storageHelperBin, []string{"check"}, executil.WithCombinedOutput(&buf)); err != nil {
+		return fmt.Errorf("storage mounts are not ready: %s: %w", strings.TrimSpace(buf.String()), err)
+	}
+	return nil
+}
+
 func (m *Manager) Deploy(ctx context.Context, name string, r io.Reader, w io.Writer) error {
 	if err := validateName(name); err != nil {
+		return err
+	}
+	if err := m.checkStorageMounts(ctx); err != nil {
 		return err
 	}
 	path := m.stackPath(name)
@@ -93,6 +108,9 @@ func (m *Manager) Remove(ctx context.Context, name string, w io.Writer) error {
 
 func (m *Manager) Up(ctx context.Context, name string, w io.Writer) error {
 	if err := validateName(name); err != nil {
+		return err
+	}
+	if err := m.checkStorageMounts(ctx); err != nil {
 		return err
 	}
 	return m.run(ctx, w, m.stackPath(name), "up", "-d")

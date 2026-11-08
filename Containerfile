@@ -40,6 +40,7 @@ RUN chown root:_selenite-controller /usr/libexec/selenite-controller/* && \
     chown root:_selenite-dashboard /usr/libexec/selenite-controller/selenite-dashboard-helper && \
     chown root:_selenite-dashboard /usr/bin/selenite-dashboard && \
     chmod 4750 /usr/libexec/selenite-controller/* && \
+    chmod 755 /usr/libexec/selenite-storage-gate && \
     chmod 750 /usr/bin/selenite-dashboard
 
 FROM altlinux.space/alt-atomic/sbom-tool:v0.2.0@sha256:7403d01ad02d80c2948944bf30e921d815e7b0843071e76b440eb707c09cbf5d AS sbom

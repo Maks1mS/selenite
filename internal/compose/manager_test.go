@@ -58,9 +58,11 @@ func TestDeploy(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, content, string(data))
 
-		require.Len(t, r.calls, 1)
-		require.Equal(t, ExecutorBin, r.calls[0].name)
-		require.Equal(t, []string{m.stackPath("mystack"), "up", "-d"}, r.calls[0].args)
+		require.Len(t, r.calls, 2)
+		require.Equal(t, storageHelperBin, r.calls[0].name)
+		require.Equal(t, []string{"check"}, r.calls[0].args)
+		require.Equal(t, ExecutorBin, r.calls[1].name)
+		require.Equal(t, []string{m.stackPath("mystack"), "up", "-d"}, r.calls[1].args)
 	})
 
 	t.Run("runner error is propagated", func(t *testing.T) {
@@ -69,6 +71,15 @@ func TestDeploy(t *testing.T) {
 		m := newTestManager(t, r)
 		err := m.Deploy(context.Background(), "mystack", strings.NewReader(""), io.Discard)
 		require.ErrorIs(t, err, runErr)
+	})
+
+	t.Run("storage check failure prevents deploy", func(t *testing.T) {
+		r := &mockRunner{err: errors.New("mount not active")}
+		m := newTestManager(t, r)
+		err := m.Deploy(context.Background(), "mystack", strings.NewReader("x"), io.Discard)
+		require.ErrorContains(t, err, "storage")
+		require.Len(t, r.calls, 1)
+		require.NoFileExists(t, filepath.Join(m.stackPath("mystack"), "compose.yml"))
 	})
 }
 
@@ -86,9 +97,11 @@ func TestUp(t *testing.T) {
 		m := newTestManager(t, r)
 		err := m.Up(context.Background(), "mystack", io.Discard)
 		require.NoError(t, err)
-		require.Len(t, r.calls, 1)
-		require.Equal(t, ExecutorBin, r.calls[0].name)
-		require.Equal(t, []string{m.stackPath("mystack"), "up", "-d"}, r.calls[0].args)
+		require.Len(t, r.calls, 2)
+		require.Equal(t, storageHelperBin, r.calls[0].name)
+		require.Equal(t, []string{"check"}, r.calls[0].args)
+		require.Equal(t, ExecutorBin, r.calls[1].name)
+		require.Equal(t, []string{m.stackPath("mystack"), "up", "-d"}, r.calls[1].args)
 	})
 
 	t.Run("runner error is propagated", func(t *testing.T) {

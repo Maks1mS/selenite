@@ -12,38 +12,40 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"altlinux.space/alt-atomic/selenite/tests/e2e/internal/e2etest"
 )
 
 func TestMiscCommandsWorks(t *testing.T) {
 	t.Parallel()
-	client := bootVMWithProvison(t)
+	client := e2etest.BootVMProvisioned(t)
 
-	// run(t, "version works", func(t *testing.T) {
-	// 	out := mustRunCmd(t, client, "version")
+	// e2etest.Step(t, "version works", func(t *testing.T) {
+	// 	out := client.Run(t, "version")
 	// 	assert.Contains(t, out, "Version:")
 	// 	assert.Contains(t, out, "GitCommit:")
 	// 	assert.Contains(t, out, "Go:")
 	// })
 
-	run(t, "help works", func(t *testing.T) {
-		out := mustRunCmd(t, client, "help")
+	e2etest.Step(t, "help works", func(t *testing.T) {
+		out := client.Run(t, "help")
 		assert.Contains(t, out, "Selenite is an immutable server OS built around podman compose stacks")
 	})
 
-	run(t, "debug requires PTY", func(t *testing.T) {
-		out, err := runCmdWithStdin(t, client.ssh, "debug quay.io/quay/busybox", nil)
+	e2etest.Step(t, "debug requires PTY", func(t *testing.T) {
+		out, err := client.TryRun("debug quay.io/quay/busybox", nil)
 		require.Error(t, err)
 		assert.Contains(t, out, "requires an active PTY")
 	})
 
-	run(t, "debug requires image", func(t *testing.T) {
-		out, err := runPtyCmd(t, client.ssh, "debug")
+	e2etest.Step(t, "debug requires image", func(t *testing.T) {
+		out, err := client.TryRunPTY("debug")
 		require.Error(t, err)
 		assert.Contains(t, out, "image is required")
 	})
 
-	run(t, "debug runs a command in container with /host mounted", func(t *testing.T) {
-		out, err := runPtyCmd(t, client.ssh, "debug quay.io/quay/busybox cat /host/etc/os-release")
+	e2etest.Step(t, "debug runs a command in container with /host mounted", func(t *testing.T) {
+		out, err := client.TryRunPTY("debug quay.io/quay/busybox cat /host/etc/os-release")
 		require.NoError(t, err, "output: %s", out)
 		assert.Contains(t, strings.TrimSpace(out), "Selenite")
 	})
