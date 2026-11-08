@@ -140,6 +140,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       git_commit: ${{ steps.version.outputs.git_commit }}
+      image_aliases: ${{ steps.version.outputs.image_aliases }}
 
     steps:
       - <<: *checkout
@@ -148,10 +149,24 @@ jobs:
 
       - name: Get image version
         id: version
+        env:
+          GIT_REF: ${{ forgejo.ref }}
         run: |
           VERSION=$(git describe --tags 2>/dev/null || git rev-parse --short HEAD)
           echo "version=$VERSION" >> $FORGEJO_OUTPUT
           echo "git_commit=$(git rev-parse HEAD)" >> $FORGEJO_OUTPUT
+
+          case "$GIT_REF" in
+            refs/heads/main)
+              echo "image_aliases=nightly" >> "$FORGEJO_OUTPUT"
+              ;;
+            refs/heads/release/v*)
+              echo "image_aliases=nightly-${GIT_REF#refs/heads/release/}" >> "$FORGEJO_OUTPUT"
+              ;;
+            *)
+              echo "image_aliases=" >> "$FORGEJO_OUTPUT"
+              ;;
+          esac
 
   build:
     needs: [generate-version]
@@ -161,5 +176,5 @@ jobs:
       version: ${{ needs.generate-version.outputs.version }}
       git_commit: ${{ needs.generate-version.outputs.git_commit }}
       git_ref: ${{ forgejo.ref }}
-      image_aliases: ${{ case(forgejo.ref == 'refs/heads/main', 'nightly', '') }}
+      image_aliases: ${{ needs.generate-version.outputs.image_aliases }}
       push: ${{ forgejo.ref == 'refs/heads/main' || startsWith(forgejo.ref, 'refs/heads/release/') }}
