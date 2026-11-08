@@ -51,18 +51,53 @@ COMMANDS:{{range .VisibleCommands}}
 Run 'ssh <server> help <command>' for more information about a command.
 `
 
-const subCmdHelpTemplate = `{{.Name}}{{if .Usage}} — {{.Usage}}{{end}}{{if .Description}}
+func subCmdHelpTemplate(path string) string {
+	return path + `{{if .Usage}} — {{.Usage}}{{end}}{{if .Description}}
 
 {{wrap .Description 0}}{{end}}
 
 USAGE:
-   ssh <server> {{.Name}}{{if .ArgsUsage}} {{.ArgsUsage}}{{end}}{{if .VisibleFlags}} [options]{{end}}
+   ssh <server> ` + path + `{{if .VisibleCommands}} <command> [command options]{{end}}{{if .ArgsUsage}} {{.ArgsUsage}}{{end}}{{if .VisibleFlags}} [options]{{end}}
+{{- if .VisibleCommands}}
+
+COMMANDS:{{range .VisibleCommands}}
+   {{$s := join .Names ", "}}{{$s}}{{"\t"}}{{.Usage}}{{end}}
+{{- end}}
 {{- if .VisibleFlags}}
 
 OPTIONS:{{range .VisibleFlags}}
    {{wrap .String 6}}{{end}}
 {{- end}}
 `
+}
+
+// helpCommand returns the help command used instead of the built-in cli help.
+func helpCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "help",
+		Aliases:   []string{"h"},
+		Usage:     "Show help for a command",
+		ArgsUsage: "[command ...]",
+		HideHelp:  true,
+		Action: func(ctx context.Context, c *cli.Command) error {
+			target := c.Root()
+			if lineage := c.Lineage(); len(lineage) > 1 {
+				target = lineage[1]
+			}
+			for _, name := range c.Args().Slice() {
+				sub := target.Command(name)
+				if sub == nil {
+					return cli.ShowCommandHelp(ctx, target, name)
+				}
+				target = sub
+			}
+			if target.Root() == target {
+				return cli.ShowRootCommandHelp(target)
+			}
+			return cli.ShowSubcommandHelp(target)
+		},
+	}
+}
 
 func AppCmd(sess ssh.Session) *cli.Command {
 	root := &cli.Command{
@@ -91,7 +126,7 @@ func AppCmd(sess ssh.Session) *cli.Command {
 			return ctx, fmt.Errorf("provision mode: only 'provision' command is allowed")
 		},
 	}
-	prepareCmdForWish(root, sess)
+	prepareCmdForWish(root, sess, "")
 	return root
 }
 
@@ -106,7 +141,7 @@ func (p ptyWriter) Write(b []byte) (int, error) {
 	return len(b), err
 }
 
-func prepareCmdForWish(cmd *cli.Command, sess ssh.Session) {
+func prepareCmdForWish(cmd *cli.Command, sess ssh.Session, path string) {
 	if sess != nil {
 		var stdout io.Writer = sess
 		var stderr io.Writer = sess.Stderr()
@@ -119,24 +154,40 @@ func prepareCmdForWish(cmd *cli.Command, sess ssh.Session) {
 		cmd.ErrWriter = stderr
 	}
 	cli.HelpFlag = nil
+	// The default help for commands with subcommands ignores CustomHelpTemplate
+	cli.ShowSubcommandHelp = func(c *cli.Command) error {
+		if c.CustomHelpTemplate != "" {
+			cli.HelpPrinter(c.Root().Writer, c.CustomHelpTemplate, c)
+			return nil
+		}
+		return cli.DefaultShowSubcommandHelp(c)
+	}
 	cmd.CommandNotFound = func(ctx context.Context, c *cli.Command, s string) {
 		_, _ = fmt.Fprintf(c.ErrWriter, "command not found: %s\n", s)
 	}
 	cmd.EnableShellCompletion = false
+	if !cmd.HideHelp {
+		cmd.Commands = append(cmd.Commands, helpCommand())
+	}
 	for _, subCmd := range cmd.Commands {
-		if subCmd.CustomHelpTemplate == "" {
-			subCmd.CustomHelpTemplate = subCmdHelpTemplate
+		subPath := subCmd.Name
+		if path != "" {
+			subPath = path + " " + subCmd.Name
 		}
-		prepareCmdForWish(subCmd, sess)
+		if subCmd.CustomHelpTemplate == "" {
+			subCmd.CustomHelpTemplate = subCmdHelpTemplate(subPath)
+		}
+		prepareCmdForWish(subCmd, sess, subPath)
 	}
 }
 
 func debugCommand(sess ssh.Session) *cli.Command {
 	return &cli.Command{
-		Name:      "debug",
-		Usage:     "Start a privileged debug container",
-		ArgsUsage: "<image> [command...]",
-		Before:    requirePermission("debug", access.InvokeVerb),
+		Name:        "debug",
+		Usage:       "Start a privileged debug container",
+		ArgsUsage:   "<image> [command...]",
+		Description: "Runs the given image in a privileged container with the host root filesystem mounted at /host.",
+		Before:      requirePermission("debug", access.InvokeVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if sess == nil {
 				return errors.New("requires an active PTY")
@@ -174,7 +225,9 @@ func beforeChecks(funcs ...cli.BeforeFunc) cli.BeforeFunc {
 func provisionCommand(sess ssh.Session) *cli.Command {
 	return &cli.Command{
 		Name:  "provision",
-		Usage: "Provision",
+		Usage: "Provision the machine on first boot",
+		Description: "Registers the SSH public key of the connecting user as the initial root user. " +
+			"Only available before the machine has been provisioned.",
 		Action: func(ctx context.Context, c *cli.Command) error {
 			isProvision, _ := ctx.Value(ctxIsProvisionMode).(bool)
 			if !isProvision {

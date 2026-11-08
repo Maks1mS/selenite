@@ -45,8 +45,10 @@ func requireStackName(ctx context.Context, c *cli.Command) (context.Context, err
 func stackDeployCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "deploy",
-		Usage:     "Deploy a stack from stdin (compose.yml)",
+		Usage:     "Create or update a stack from stdin (compose.yml)",
 		ArgsUsage: stackNamePlaceholder,
+		Description: "Writes the compose.yml read from stdin and brings the stack up. " +
+			"If the stack already exists, it is updated in place.",
 		Before: beforeChecks(
 			requireStackName,
 			requirePermission("stack/{0}", access.CreateVerb),
@@ -148,7 +150,7 @@ func stackPsCommand() *cli.Command {
 func stackLogsCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "logs",
-		Usage:     "View stack logs",
+		Usage:     "Show stack logs",
 		ArgsUsage: fmt.Sprintf("%s [service]", stackNamePlaceholder),
 		Before: beforeChecks(
 			requireStackName,
