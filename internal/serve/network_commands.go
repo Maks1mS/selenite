@@ -96,9 +96,10 @@ func networkCreateCommand() *cli.Command {
 
 func networkRemoveCommand() *cli.Command {
 	return &cli.Command{
-		Name:    "remove",
-		Usage:   "Remove a network",
-		Aliases: []string{"rm"},
+		Name:      "remove",
+		Usage:     "Remove a network",
+		ArgsUsage: "<name>",
+		Aliases:   []string{"rm"},
 		Before: beforeChecks(
 			requireNetworkName,
 			requirePermission("infra/network/{0}", access.DeleteVerb),
@@ -114,8 +115,9 @@ func networkRemoveCommand() *cli.Command {
 
 func networkInspectCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "inspect",
-		Usage: "Inspect a network",
+		Name:      "inspect",
+		Usage:     "Inspect a network",
+		ArgsUsage: "<name>",
 		Before: beforeChecks(
 			requireNetworkName,
 			requirePermission("infra/network/{0}", access.GetVerb),

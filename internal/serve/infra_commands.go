@@ -16,7 +16,8 @@ import (
 
 func infraCommand() *cli.Command {
 	return &cli.Command{
-		Name: "infra",
+		Name:  "infra",
+		Usage: "Manage secrets, volumes and networks",
 		Commands: []*cli.Command{
 			secretCommand(),
 			volumeCommand(),
@@ -48,8 +49,9 @@ func volumeCommand() *cli.Command {
 
 func volumeExportCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "export",
-		Usage: "Export volume",
+		Name:      "export",
+		Usage:     "Export a volume to stdout as a zstd stream",
+		ArgsUsage: "<name>",
 		Before: beforeChecks(
 			requireVolumeName,
 			requirePermission("infra/volume/{0}/data", access.GetVerb),
@@ -62,8 +64,10 @@ func volumeExportCommand() *cli.Command {
 
 func volumeImportCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "import",
-		Usage: "Import volume",
+		Name:        "import",
+		Usage:       "Import a volume from a zstd stream on stdin",
+		ArgsUsage:   "<name>",
+		Description: "Creates the volume if it does not exist.",
 		Before: beforeChecks(
 			requireVolumeName,
 			requirePermission("infra/volume/{0}/data", access.UpdateVerb),

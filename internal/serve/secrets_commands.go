@@ -37,8 +37,9 @@ func requireSecretName(ctx context.Context, c *cli.Command) (context.Context, er
 
 func secretCreateCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "create",
-		Usage: "Create secret",
+		Name:      "create",
+		Usage:     "Create a secret from stdin",
+		ArgsUsage: "<name>",
 		Before: beforeChecks(
 			requireSecretName,
 			requirePermission("infra/secret/{0}", access.CreateVerb),
@@ -51,9 +52,10 @@ func secretCreateCommand() *cli.Command {
 
 func secretRemoveCommand() *cli.Command {
 	return &cli.Command{
-		Name:    "remove",
-		Usage:   "Remove secret",
-		Aliases: []string{"rm"},
+		Name:      "remove",
+		Usage:     "Remove a secret",
+		ArgsUsage: "<name>",
+		Aliases:   []string{"rm"},
 		Before: beforeChecks(
 			requireSecretName,
 			requirePermission("infra/secret/{0}", access.DeleteVerb),

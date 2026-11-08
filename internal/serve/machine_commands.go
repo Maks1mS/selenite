@@ -25,7 +25,7 @@ var errImageRequired = errors.New("image required")
 func machineCommands() *cli.Command {
 	return &cli.Command{
 		Name:  "machine",
-		Usage: "Manage machine",
+		Usage: "Manage machine lifecycle and configuration",
 		Commands: []*cli.Command{
 			logsCommand(),
 			dmesgCommand(),
@@ -71,7 +71,7 @@ func logsCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "logs",
 		Usage:     "Show system logs",
-		ArgsUsage: servicePlaceholder,
+		ArgsUsage: fmt.Sprintf("[%s]", servicePlaceholder),
 		Before:    requirePermission("machine/logs", access.GetVerb),
 		Flags: []cli.Flag{
 			&cli.IntFlag{
@@ -106,7 +106,7 @@ func infoCommand() *cli.Command {
 func rebootCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "reboot",
-		Usage:  "Reboot",
+		Usage:  "Reboot the machine",
 		Before: requirePermission("machine/reboot", access.InvokeVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return machine.New().Reboot(ctx, c.Writer)
@@ -116,8 +116,10 @@ func rebootCommand() *cli.Command {
 
 func upgradeCommand() *cli.Command {
 	return &cli.Command{
-		Name:   "upgrade",
-		Usage:  "Upgrade",
+		Name:  "upgrade",
+		Usage: "Upgrade to the latest system image",
+		Description: "Pulls the newest OS image with bootc and stages it for the next boot. " +
+			"Run 'machine reboot' to apply it.",
 		Before: requirePermission("machine/upgrade", access.InvokeVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return machine.New().Upgrade(ctx, c.Writer)
@@ -127,8 +129,10 @@ func upgradeCommand() *cli.Command {
 
 func rollbackCommand() *cli.Command {
 	return &cli.Command{
-		Name:   "rollback",
-		Usage:  "Rollback",
+		Name:  "rollback",
+		Usage: "Roll back to the previous system image",
+		Description: "Switches back to the previously staged OS image. " +
+			"Run 'machine reboot' to apply it.",
 		Before: requirePermission("machine/rollback", access.InvokeVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return machine.New().Rollback(ctx, c.Writer)
@@ -139,9 +143,11 @@ func rollbackCommand() *cli.Command {
 func switchCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "switch",
-		Usage:     "Switch to a different image",
+		Usage:     "Switch to a different system image",
 		ArgsUsage: imagePlaceholder,
-		Before:    requirePermission("machine/switch", access.InvokeVerb),
+		Description: "Stages the given OS image for the next boot. " +
+			"Run 'machine reboot' to apply it.",
+		Before: requirePermission("machine/switch", access.InvokeVerb),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() == 0 {
 				return errImageRequired
@@ -154,7 +160,7 @@ func switchCommand() *cli.Command {
 func configCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "config",
-		Usage: "Machine config",
+		Usage: "Manage machine config",
 		Commands: []*cli.Command{
 			applyConfigCommand(),
 			patchConfigCommand(),
@@ -166,11 +172,12 @@ func configCommand() *cli.Command {
 func applyConfigCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "apply",
-		Usage:  "Apply machine config",
+		Usage:  "Apply machine config from stdin",
 		Before: requirePermission("machine/config", access.UpdateVerb),
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
-				Name: "reboot",
+				Name:  "reboot",
+				Usage: "Reboot after the config is applied",
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
@@ -191,12 +198,16 @@ func applyConfigCommand() *cli.Command {
 
 func patchConfigCommand() *cli.Command {
 	return &cli.Command{
-		Name:   "patch",
-		Usage:  "Patch machine config",
+		Name:  "patch",
+		Usage: "Patch machine config from stdin",
+		Description: "Applies patches read from stdin to the machine config. " +
+			"Each YAML document must be an RFC 7396 merge patch or an RFC 6902 JSON Patch." +
+			"Documents are separated by '---' and applied in order.",
 		Before: requirePermission("machine/config", access.UpdateVerb),
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
-				Name: "reboot",
+				Name:  "reboot",
+				Usage: "Reboot after the patch is applied",
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
