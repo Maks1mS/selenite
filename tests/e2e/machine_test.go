@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	gossh "golang.org/x/crypto/ssh"
+
+	"altlinux.space/alt-atomic/selenite/tests/e2e/internal/e2etest"
 )
 
 var (
@@ -50,22 +52,22 @@ func parseUptimeSeconds(t *testing.T, out string) int {
 
 func TestMachine(t *testing.T) {
 	t.Parallel()
-	client := bootVMWithProvison(t)
+	client := e2etest.BootVMProvisioned(t)
 
-	run(t, "'machine info' works", func(t *testing.T) {
-		out := mustRunCmd(t, client, "machine info")
+	e2etest.Step(t, "'machine info' works", func(t *testing.T) {
+		out := client.Run(t, "machine info")
 		assert.Contains(t, out, "Memory:")
 		assert.Contains(t, out, "Swap:")
 	})
 
-	run(t, "'machine config show' shows config after provision", func(t *testing.T) {
-		out := mustRunCmd(t, client, "machine config show")
+	e2etest.Step(t, "'machine config show' shows config after provision", func(t *testing.T) {
+		out := client.Run(t, "machine config show")
 		assert.Contains(t, out, "access:")
 		assert.Contains(t, out, "provisioner")
 	})
 
-	run(t, "'machine config apply' works", func(t *testing.T) {
-		keyStr := strings.TrimRight(string(gossh.MarshalAuthorizedKey(client.publicKey)), "\n")
+	e2etest.Step(t, "'machine config apply' works", func(t *testing.T) {
+		keyStr := strings.TrimRight(string(gossh.MarshalAuthorizedKey(client.PublicKey())), "\n")
 		cfg := fmt.Sprintf(`
 access:
   users:
@@ -79,53 +81,53 @@ sysctl:
     net.ipv4.ip_unprivileged_port_start: 80
 `, keyStr)
 
-		mustRunCmdWithStdin(t, client, "machine config apply", strings.NewReader(cfg))
+		client.RunStdin(t, "machine config apply", strings.NewReader(cfg))
 	})
 
-	run(t, "'machine config show' reflects applied config", func(t *testing.T) {
-		out := mustRunCmd(t, client, "machine config show")
+	e2etest.Step(t, "'machine config show' reflects applied config", func(t *testing.T) {
+		out := client.Run(t, "machine config show")
 		assert.Contains(t, out, "ip_unprivileged_port_start")
 	})
 
 	// var uptimeBefore int
-	// run(t, "stats returns uptime", func(t *testing.T) {
+	// e2etest.Step(t, "stats returns uptime", func(t *testing.T) {
 	// 	time.Sleep(time.Second * 40)
-	// 	out := mustRunCmd(t, client, "machine stats")
+	// 	out := client.Run(t, "machine stats")
 	// 	uptimeBefore = parseUptimeSeconds(t, out)
 	// 	assert.Greater(t, uptimeBefore, 0)
 	// 	assert.Contains(t, out, "Memory:")
 	// 	assert.Contains(t, out, "Disk:")
 	// })
 
-	run(t, "'machine logs' returns output", func(t *testing.T) {
-		out := mustRunCmd(t, client, "machine logs -n 10")
+	e2etest.Step(t, "'machine logs' returns output", func(t *testing.T) {
+		out := client.Run(t, "machine logs -n 10")
 		assert.NotEmpty(t, out)
 	})
 
-	run(t, "'machine logs' filters by service", func(t *testing.T) {
-		out := mustRunCmd(t, client, "machine logs -n 20 selenite-controller")
+	e2etest.Step(t, "'machine logs' filters by service", func(t *testing.T) {
+		out := client.Run(t, "machine logs -n 20 selenite-controller")
 		assert.NotEmpty(t, out)
 		assert.Contains(t, out, "selenite-controller")
 	})
 
-	run(t, "'machine dmesg' returns output", func(t *testing.T) {
-		out := mustRunCmd(t, client, "machine dmesg")
+	e2etest.Step(t, "'machine dmesg' returns output", func(t *testing.T) {
+		out := client.Run(t, "machine dmesg")
 		assert.NotEmpty(t, out)
 	})
 
-	run(t, "'machine dmesg' with flags returns output", func(t *testing.T) {
-		out := mustRunCmd(t, client, "machine dmesg --level info")
+	e2etest.Step(t, "'machine dmesg' with flags returns output", func(t *testing.T) {
+		out := client.Run(t, "machine dmesg --level info")
 		assert.NotEmpty(t, out)
 	})
 
-	run(t, "reboot works", func(t *testing.T) {
-		out := mustRunCmd(t, client, "machine reboot")
+	e2etest.Step(t, "reboot works", func(t *testing.T) {
+		out := client.Run(t, "machine reboot")
 		assert.Equal(t, "Rebooting...\n", out)
 	})
 
-	// run(t, "uptime resets after reboot", func(t *testing.T) {
-	// 	client.reconnect(t, 120*time.Second)
-	// 	out := mustRunCmd(t, client, "machine stats")
+	// e2etest.Step(t, "uptime resets after reboot", func(t *testing.T) {
+	// 	client.Reconnect(t, 120*time.Second)
+	// 	out := client.Run(t, "machine stats")
 	// 	uptimeAfter := parseUptimeSeconds(t, out)
 	// 	assert.Less(t, uptimeAfter, uptimeBefore)
 	// })

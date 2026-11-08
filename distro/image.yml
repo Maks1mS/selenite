@@ -48,6 +48,7 @@ modules:
         - selenite-kmsg-redirect.service
         - selenite-console-log.service
         - selenite-serial-log.service
+        - selenite-mounts-retry.timer
       enabled: true
 
   - name: Set branding

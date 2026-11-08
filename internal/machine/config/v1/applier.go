@@ -65,6 +65,10 @@ func NewApplier(cfg, prev *MachineConfig, r executil.Runner, s Store) *Applier {
 	if prev != nil {
 		prevMemory = prev.Memory
 	}
+	var prevStorage StorageConfig
+	if prev != nil {
+		prevStorage = prev.Storage
+	}
 
 	modules := []ModuleApplier{
 		NewAccessApplier(cfg.Access),
@@ -72,6 +76,7 @@ func NewApplier(cfg, prev *MachineConfig, r executil.Runner, s Store) *Applier {
 		NewNetbirdApplier(cfg.Netbird, prevNetbird, r),
 		NewMonitoringApplier(cfg.Monitoring, prevMonitoring, r),
 		NewZramApplier(cfg.Memory.Zram, prevMemory.Zram, r),
+		NewStorageApplier(cfg.Storage, prevStorage, r),
 	}
 	// Network is managed when either the current or previous config has a
 	// desired state. When the current config drops the section we run a

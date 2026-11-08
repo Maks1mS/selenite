@@ -36,6 +36,13 @@ packages:
       pkgname: mocks
     interfaces:
       Context:
+  altlinux.space/alt-atomic/selenite/internal/helpers/root/storage:
+    config:
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "mock_systemctl.go"
+      pkgname: mocks
+    interfaces:
+      Systemctl:
   altlinux.space/alt-atomic/selenite/internal/dashboard/components/status:
     config:
       dir: "internal/dashboard/mocks"

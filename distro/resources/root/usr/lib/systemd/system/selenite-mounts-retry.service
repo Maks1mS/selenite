@@ -1,0 +1,7 @@
+[Unit]
+Description=Selenite storage mounts retry
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/selenite-controller/storage-helper retry
+LogLevelMax=notice

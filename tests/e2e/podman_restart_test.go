@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"altlinux.space/alt-atomic/selenite/tests/e2e/internal/e2etest"
 )
 
 // Regression test for podman-restart.service being enabled
@@ -19,7 +21,7 @@ import (
 // without any manual intervention.
 func TestPodmanRestartAlways(t *testing.T) {
 	t.Parallel()
-	client := bootVMWithProvison(t)
+	client := e2etest.BootVMProvisioned(t)
 	const stackName = "restart-always"
 	const stack = `services:
   test:
@@ -28,22 +30,22 @@ func TestPodmanRestartAlways(t *testing.T) {
     restart: always
 `
 
-	run(t, "deploy stack", func(t *testing.T) {
-		mustDeployStack(t, client, stackName, stack)
-		out := mustRunCmd(t, client, "stack list")
+	e2etest.Step(t, "deploy stack", func(t *testing.T) {
+		client.DeployStack(t, stackName, stack)
+		out := client.Run(t, "stack list")
 		require.Contains(t, out, stackName)
 	})
 
-	run(t, "container is running", func(t *testing.T) {
-		waitStackRunning(t, client, stackName)
+	e2etest.Step(t, "container is running", func(t *testing.T) {
+		client.WaitStackRunning(t, stackName)
 	})
 
-	run(t, "reboot", func(t *testing.T) {
-		mustRunCmd(t, client, "machine reboot")
+	e2etest.Step(t, "reboot", func(t *testing.T) {
+		client.Run(t, "machine reboot")
 	})
 
-	run(t, "container restarted automatically after reboot", func(t *testing.T) {
-		client.reconnect(t, 120*time.Second)
-		waitStackRunning(t, client, stackName)
+	e2etest.Step(t, "container restarted automatically after reboot", func(t *testing.T) {
+		client.Reconnect(t, 120*time.Second)
+		client.WaitStackRunning(t, stackName)
 	})
 }

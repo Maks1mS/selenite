@@ -93,6 +93,22 @@ type MemoryConfig struct {
 	Zram ZramConfig `yaml:"zram,omitempty" json:"zram,omitempty"`
 }
 
+// MountSpec describes a host-level storage mount
+//
+// Type "nfs": source is "host:/export/path".
+// Type "disk": source is a device path (e.g. /dev/disk/by-label/data), fs is the filesystem type.
+type MountSpec struct {
+	Type    string            `yaml:"type" json:"type"`
+	Source  string            `yaml:"source" json:"source"`
+	Target  string            `yaml:"target" json:"target"`
+	Fs      string            `yaml:"fs,omitempty" json:"fs,omitempty"`
+	Options mo.Option[string] `yaml:"options,omitempty" json:"options,omitempty"`
+}
+
+type StorageConfig struct {
+	Mounts []MountSpec `yaml:"mounts,omitempty" json:"mounts,omitempty"`
+}
+
 type MachineConfig struct {
 	Sysctl     SysctlConfig     `yaml:"sysctl,omitempty" json:"sysctl,omitempty"`
 	Access     AccessConfig     `yaml:"access,omitempty" json:"access,omitempty"`
@@ -100,6 +116,7 @@ type MachineConfig struct {
 	Monitoring MonitoringConfig `yaml:"monitoring,omitempty" json:"monitoring,omitempty"`
 	Network    NetworkConfig    `yaml:"network,omitempty" json:"network,omitempty"`
 	Memory     MemoryConfig     `yaml:"memory,omitempty" json:"memory,omitempty"`
+	Storage    StorageConfig    `yaml:"storage,omitempty" json:"storage,omitempty"`
 }
 
 func ParseMachineConfig(b []byte) (*MachineConfig, error) {

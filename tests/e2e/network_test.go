@@ -10,53 +10,55 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"altlinux.space/alt-atomic/selenite/tests/e2e/internal/e2etest"
 )
 
 func TestNetwork(t *testing.T) {
 	t.Parallel()
-	client := bootVMWithProvison(t)
+	client := e2etest.BootVMProvisioned(t)
 	const networkName = "test-network"
 
-	run(t, "list shows default networks", func(t *testing.T) {
-		out := mustRunCmd(t, client, "infra network ls")
+	e2etest.Step(t, "list shows default networks", func(t *testing.T) {
+		out := client.Run(t, "infra network ls")
 		assert.Contains(t, out, "NETWORK ID")
 		assert.Contains(t, out, "NAME")
 	})
 
-	run(t, "create network", func(t *testing.T) {
-		out := mustRunCmd(t, client, "infra network create "+networkName)
+	e2etest.Step(t, "create network", func(t *testing.T) {
+		out := client.Run(t, "infra network create "+networkName)
 		assert.Contains(t, out, networkName)
 	})
 
-	run(t, "network appears in list", func(t *testing.T) {
-		out := mustRunCmd(t, client, "infra network ls")
+	e2etest.Step(t, "network appears in list", func(t *testing.T) {
+		out := client.Run(t, "infra network ls")
 		assert.Contains(t, out, networkName)
 	})
 
-	run(t, "inspect network", func(t *testing.T) {
-		out := mustRunCmd(t, client, "infra network inspect "+networkName)
+	e2etest.Step(t, "inspect network", func(t *testing.T) {
+		out := client.Run(t, "infra network inspect "+networkName)
 		assert.Contains(t, out, `"name": "`+networkName+`"`)
 	})
 
-	run(t, "create network with options", func(t *testing.T) {
-		out := mustRunCmd(t, client, "infra network create "+networkName+"-opts --subnet 10.99.0.0/24 --gateway 10.99.0.1 --internal")
+	e2etest.Step(t, "create network with options", func(t *testing.T) {
+		out := client.Run(t, "infra network create "+networkName+"-opts --subnet 10.99.0.0/24 --gateway 10.99.0.1 --internal")
 		assert.Contains(t, out, networkName+"-opts")
 	})
 
-	run(t, "remove network with options", func(t *testing.T) {
-		mustRunCmd(t, client, "infra network rm "+networkName+"-opts")
+	e2etest.Step(t, "remove network with options", func(t *testing.T) {
+		client.Run(t, "infra network rm "+networkName+"-opts")
 	})
 
-	run(t, "remove network", func(t *testing.T) {
-		mustRunCmd(t, client, "infra network rm "+networkName)
+	e2etest.Step(t, "remove network", func(t *testing.T) {
+		client.Run(t, "infra network rm "+networkName)
 	})
 
-	run(t, "network disappears from list", func(t *testing.T) {
-		out := mustRunCmd(t, client, "infra network ls")
+	e2etest.Step(t, "network disappears from list", func(t *testing.T) {
+		out := client.Run(t, "infra network ls")
 		assert.NotContains(t, out, networkName)
 	})
 
-	run(t, "prune works", func(t *testing.T) {
-		_ = mustRunCmd(t, client, "infra network prune")
+	e2etest.Step(t, "prune works", func(t *testing.T) {
+		_ = client.Run(t, "infra network prune")
 	})
 }

@@ -7,38 +7,17 @@
 package e2e
 
 import (
-	"fmt"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"altlinux.space/alt-atomic/selenite/tests/e2e/internal/e2etest"
 )
-
-func hostCmd(t *testing.T, client *testClient, cmd string) string {
-	t.Helper()
-
-	const hostOutputMarker = "--- host output ---"
-
-	out, err := runPtyCmd(t, client.ssh,
-		fmt.Sprintf(`debug quay.io/quay/busybox -- sh -c "echo '%s'; chroot /host %s"`, hostOutputMarker, cmd))
-	require.NoError(t, err, "host command %q\noutput: %s", cmd, out)
-	_, after, found := strings.Cut(out, hostOutputMarker)
-	require.True(t, found, "host command %q: marker not found in output: %s", cmd, out)
-	return strings.TrimSpace(strings.ReplaceAll(after, "\r", ""))
-}
-
-func hostCmdInt(t *testing.T, client *testClient, cmd string) int64 {
-	t.Helper()
-	out := hostCmd(t, client, cmd)
-	n, err := strconv.ParseInt(out, 10, 64)
-	require.NoError(t, err, "host command %q: not a number: %q", cmd, out)
-	return n
-}
 
 var btrfsDevSizeRe = regexp.MustCompile(`devid\s+1\s+size\s+(\d+)`)
 
@@ -51,31 +30,31 @@ func TestRootFilesystemGrowsToFillDisk(t *testing.T) {
 	out, err := exec.Command(
 		"qemu-img", "create", "-q",
 		"-f", "qcow2",
-		"-b", baseDiskImage(), "-F", "raw",
+		"-b", e2etest.BaseDiskImage(), "-F", "raw",
 		disk, "10G",
 	).CombinedOutput()
 	require.NoError(t, err, "qemu-img create: %s", out)
 
-	client := bootVMWithDisk(t, disk, "qcow2")
-	provision(t, client)
+	client := e2etest.BootVMWithDisk(t, disk, "qcow2")
+	client.Provision(t)
 
 	var diskSize, partSize int64
 	var rootDev string
 
-	run(t, "root partition fills the disk", func(t *testing.T) {
-		rootDev = hostCmd(t, client, "findmnt -nvo SOURCE /sysroot")
+	e2etest.Step(t, "root partition fills the disk", func(t *testing.T) {
+		rootDev = client.HostCmd(t, "findmnt -nvo SOURCE /sysroot")
 		require.Equal(t, "/dev/vda3", rootDev)
 
-		diskSize = hostCmdInt(t, client, "lsblk -bndo SIZE /dev/vda")
-		partStart := hostCmdInt(t, client, "cat /sys/class/block/vda3/start") * 512
-		partSize = hostCmdInt(t, client, "lsblk -bndo SIZE "+rootDev)
+		diskSize = client.HostCmdInt(t, "lsblk -bndo SIZE /dev/vda")
+		partStart := client.HostCmdInt(t, "cat /sys/class/block/vda3/start") * 512
+		partSize = client.HostCmdInt(t, "lsblk -bndo SIZE "+rootDev)
 
 		// growpart leaves only the backup GPT (~1 MiB) at the end of the disk.
 		assert.InDelta(t, diskSize, partStart+partSize, 2<<20)
 	})
 
-	run(t, "root filesystem fills the partition", func(t *testing.T) {
-		out := hostCmd(t, client, "btrfs filesystem show --raw /sysroot")
+	e2etest.Step(t, "root filesystem fills the partition", func(t *testing.T) {
+		out := client.HostCmd(t, "btrfs filesystem show --raw /sysroot")
 		m := btrfsDevSizeRe.FindStringSubmatch(out)
 		require.NotNil(t, m, "btrfs device size not found in:\n%s", out)
 		fsSize, err := strconv.ParseInt(m[1], 10, 64)
@@ -85,8 +64,8 @@ func TestRootFilesystemGrowsToFillDisk(t *testing.T) {
 		assert.Equal(t, partSize/btrfsSectorSize*btrfsSectorSize, fsSize)
 	})
 
-	run(t, "bootc-generic-growpart reports the change", func(t *testing.T) {
-		out := mustRunCmd(t, client, "machine logs -n 50 bootc-generic-growpart")
+	e2etest.Step(t, "bootc-generic-growpart reports the change", func(t *testing.T) {
+		out := client.Run(t, "machine logs -n 50 bootc-generic-growpart")
 		assert.Contains(t, out, "CHANGED: partition=3")
 	})
 }

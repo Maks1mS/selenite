@@ -31,6 +31,7 @@ vars:
     - nmstate-helper:usr/libexec/selenite-controller/nmstate-helper
     - debug-helper:usr/libexec/selenite-controller/debug-helper
     - zram-helper:usr/libexec/selenite-controller/zram-helper
+    - storage-helper:usr/libexec/selenite-controller/storage-helper
 
 includes:
   dev:
@@ -95,7 +96,7 @@ tasks:
     desc: "Run e2e tests"
     vars:
       E2E_PARALLELISM: '4'
-      TEST_FILTER: '{{if .TESTS}}-run {{.TESTS}}{{end}}'
+      TEST_FILTER: '{{if .TESTS}}-run "{{.TESTS}}"{{end}}'
     cmds:
       - "./scripts/prepare-e2e.sh"
       - go test -tags=e2e -timeout 60m -count=1 -p {{.E2E_PARALLELISM}} -v {{.TEST_FILTER}} ./tests/e2e/

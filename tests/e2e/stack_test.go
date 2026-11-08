@@ -15,6 +15,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"altlinux.space/alt-atomic/selenite/tests/e2e/internal/e2etest"
 )
 
 const testComposeYAML = `services:
@@ -41,71 +43,69 @@ var testdataFS embed.FS
 
 func TestStack(t *testing.T) {
 	t.Parallel()
-	client := bootVMWithProvison(t)
+	client := e2etest.BootVMProvisioned(t)
 	const stackName = "test-app"
 
-	run(t, "initial list is empty", func(t *testing.T) {
-		out := mustRunCmd(t, client, "stack list")
+	e2etest.Step(t, "initial list is empty", func(t *testing.T) {
+		out := client.Run(t, "stack list")
 		assert.Equal(t, "no stacks deployed\n", out)
 	})
 
-	run(t, "initial secret list is empty", func(t *testing.T) {
-		out := mustRunCmd(t, client, "infra secret list")
+	e2etest.Step(t, "initial secret list is empty", func(t *testing.T) {
+		out := client.Run(t, "infra secret list")
 		assert.Equal(t, "ID          NAME        DRIVER      CREATED     UPDATED\n", out)
 	})
 
-	run(t, "add secret", func(t *testing.T) {
-		mustRunCmdWithStdin(t, client, "infra secret create test_secret", strings.NewReader("Super secret string"))
+	e2etest.Step(t, "add secret", func(t *testing.T) {
+		client.RunStdin(t, "infra secret create test_secret", strings.NewReader("Super secret string"))
 	})
 
-	run(t, "secret added", func(t *testing.T) {
-		out := mustRunCmd(t, client, "infra secret list")
+	e2etest.Step(t, "secret added", func(t *testing.T) {
+		out := client.Run(t, "infra secret list")
 		assert.Contains(t, out, "test_secret")
 	})
 
-	run(t, "deploy creates stack", func(t *testing.T) {
-		mustDeployStack(t, client, stackName, testComposeYAML)
-		out := mustRunCmd(t, client, "stack list")
+	e2etest.Step(t, "deploy creates stack", func(t *testing.T) {
+		client.DeployStack(t, stackName, testComposeYAML)
+		out := client.Run(t, "stack list")
 		require.Contains(t, out, stackName)
 	})
 
-	run(t, "stack logs returns output", func(t *testing.T) {
+	e2etest.Step(t, "stack logs returns output", func(t *testing.T) {
 		// Give the container a moment to emit the startup log line.
 		time.Sleep(2 * time.Second)
-		out := mustRunCmd(t, client, "stack logs "+stackName)
+		out := client.Run(t, "stack logs "+stackName)
 		assert.Contains(t, out, "start-log-test")
 	})
 
-	run(t, "import volume", func(t *testing.T) {
+	e2etest.Step(t, "import volume", func(t *testing.T) {
 		volumeData, err := testdataFS.ReadFile("testdata/volume.tar.zst")
 		require.NoError(t, err)
 
-		err = sshRun(
-			client.ssh,
+		err = client.Exec(
 			"infra volume import my_test_volume",
-			WithStdin(bytes.NewReader(volumeData)),
+			e2etest.WithStdin(bytes.NewReader(volumeData)),
 		)
 		require.NoError(t, err)
 	})
 
-	run(t, "export volume", func(t *testing.T) {
+	e2etest.Step(t, "export volume", func(t *testing.T) {
 		volumeData, err := testdataFS.ReadFile("testdata/volume.tar.zst")
 		require.NoError(t, err)
 
 		var buf bytes.Buffer
 
-		err = sshRun(
-			client.ssh,
+		err = client.Exec(
 			"infra volume export my_test_volume",
-			WithStdout(&buf),
+			e2etest.WithStdout(&buf),
 		)
 		require.NoError(t, err)
 		require.Equal(t, buf.Bytes(), volumeData)
 	})
 
-	run(t, "remove removes stack", func(t *testing.T) {
-		mustRunCmd(t, client, "stack remove "+stackName)
-		out := mustRunCmd(t, client, "stack list")
+	e2etest.Step(t, "remove removes stack", func(t *testing.T) {
+		client.Run(t, "stack remove "+stackName)
+		out := client.Run(t, "stack list")
 		require.Equal(t, "no stacks deployed\n", out)
 	})
 }

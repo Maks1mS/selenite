@@ -12,6 +12,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"altlinux.space/alt-atomic/selenite/tests/e2e/internal/e2etest"
 )
 
 // Regression test for tmpfiles.d/selenite.conf.
@@ -22,7 +24,7 @@ import (
 // rootless podman intentionally leaves owned by subuid-mapped users).
 func TestPodmanStoragePermissions(t *testing.T) {
 	t.Parallel()
-	client := bootVMWithProvison(t)
+	client := e2etest.BootVMProvisioned(t)
 	const stackName = "uid-test"
 	const stack = `services:
   test:
@@ -37,27 +39,27 @@ func TestPodmanStoragePermissions(t *testing.T) {
       start_period: 1s
 `
 
-	run(t, "deploy stack", func(t *testing.T) {
-		out := mustRunCmd(t, client, "stack list")
+	e2etest.Step(t, "deploy stack", func(t *testing.T) {
+		out := client.Run(t, "stack list")
 		require.Equal(t, "no stacks deployed\n", out)
 
-		mustDeployStack(t, client, stackName, stack)
-		out = mustRunCmd(t, client, "stack list")
+		client.DeployStack(t, stackName, stack)
+		out = client.Run(t, "stack list")
 		require.Contains(t, out, stackName)
 
 		time.Sleep(2 * time.Second)
-		out = mustRunCmd(t, client, "stack ps "+stackName)
+		out = client.Run(t, "stack ps "+stackName)
 		require.Contains(t, out, "(healthy)")
 	})
 
-	run(t, "reboot", func(t *testing.T) {
-		mustRunCmd(t, client, "machine reboot")
+	e2etest.Step(t, "reboot", func(t *testing.T) {
+		client.Run(t, "machine reboot")
 	})
 
-	run(t, "stack healthy after reboot", func(t *testing.T) {
-		client.reconnect(t, 120*time.Second)
+	e2etest.Step(t, "stack healthy after reboot", func(t *testing.T) {
+		client.Reconnect(t, 120*time.Second)
 		time.Sleep(2 * time.Second)
-		out := mustRunCmd(t, client, "stack ps "+stackName)
+		out := client.Run(t, "stack ps "+stackName)
 		assert.Contains(t, out, "(healthy)")
 	})
 }
