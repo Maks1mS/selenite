@@ -30,7 +30,7 @@ require (
 	github.com/urfave/cli/v3 v3.14.0
 	go.alt-gnome.ru/x/runner v0.0.0-20260822214201-9ca586100292
 	golang.org/x/crypto v0.58.0
-	golang.org/x/sys v0.49.0
+	golang.org/x/sys v0.50.0
 )
 
 replace charm.land/huh/v2 => altlinux.space/alt-atomic/charmbracelet-huh/v2 v2.0.4-0.20260831141528-558e59afab4c
