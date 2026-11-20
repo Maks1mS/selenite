@@ -6,6 +6,7 @@ package authguard
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -15,21 +16,26 @@ import (
 	v1 "altlinux.space/alt-atomic/selenite/internal/machine/config/v1"
 )
 
-func TestGuardAllowDisabled(t *testing.T) {
-	g, err := NewGuard(v1.AuthGuardConfig{Enabled: mo.Some(false)})
+func newTestGuard(t *testing.T, cfg v1.AuthGuardConfig) *Guard {
+	t.Helper()
+	g, err := NewGuard(cfg)
 	require.NoError(t, err)
+	return g.WithPersistPath(filepath.Join(t.TempDir(), "authguard-state.json"))
+}
+
+func TestGuardAllowDisabled(t *testing.T) {
+	g := newTestGuard(t, v1.AuthGuardConfig{Enabled: mo.Some(false)})
 	require.True(t, g.Allow("1.2.3.4"))
 }
 
 func TestGuardBanAndExpire(t *testing.T) {
-	g, err := NewGuard(v1.AuthGuardConfig{
+	g := newTestGuard(t, v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(3),
 		Window:        mo.Some("1h"),
 		BanDuration:   mo.Some("50ms"),
 		MaxTrackedIPs: mo.Some(100),
 	})
-	require.NoError(t, err)
 
 	ip := "1.2.3.4"
 	require.True(t, g.Allow(ip))
@@ -44,14 +50,13 @@ func TestGuardBanAndExpire(t *testing.T) {
 }
 
 func TestGuardCleanupRemovesStale(t *testing.T) {
-	g, err := NewGuard(v1.AuthGuardConfig{
+	g := newTestGuard(t, v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(5),
 		Window:        mo.Some("1h"),
 		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(100),
 	})
-	require.NoError(t, err)
 
 	ip := "1.2.3.4"
 	require.False(t, g.RecordFailure(ip))
@@ -62,14 +67,13 @@ func TestGuardCleanupRemovesStale(t *testing.T) {
 }
 
 func TestGuardCleanupRemovesExpired(t *testing.T) {
-	g, err := NewGuard(v1.AuthGuardConfig{
+	g := newTestGuard(t, v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(2),
 		Window:        mo.Some("50ms"),
 		BanDuration:   mo.Some("50ms"),
 		MaxTrackedIPs: mo.Some(100),
 	})
-	require.NoError(t, err)
 
 	ip := "1.2.3.4"
 	require.False(t, g.RecordFailure(ip))
@@ -81,20 +85,18 @@ func TestGuardCleanupRemovesExpired(t *testing.T) {
 }
 
 func TestGuardRecordFailureDisabled(t *testing.T) {
-	g, err := NewGuard(v1.AuthGuardConfig{Enabled: mo.Some(false)})
-	require.NoError(t, err)
+	g := newTestGuard(t, v1.AuthGuardConfig{Enabled: mo.Some(false)})
 	require.False(t, g.RecordFailure("1.2.3.4"))
 }
 
 func TestGuardLRUEviction(t *testing.T) {
-	g, err := NewGuard(v1.AuthGuardConfig{
+	g := newTestGuard(t, v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(5),
 		Window:        mo.Some("1h"),
 		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(2),
 	})
-	require.NoError(t, err)
 
 	g.RecordFailure("1.2.3.1")
 	g.RecordFailure("1.2.3.2")
@@ -105,14 +107,13 @@ func TestGuardLRUEviction(t *testing.T) {
 }
 
 func TestGuardMemoryBounded(t *testing.T) {
-	g, err := NewGuard(v1.AuthGuardConfig{
+	g := newTestGuard(t, v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(3),
 		Window:        mo.Some("1h"),
 		BanDuration:   mo.Some("1h"),
 		MaxTrackedIPs: mo.Some(100),
 	})
-	require.NoError(t, err)
 
 	for i := range 1_000_000 {
 		ip := fmt.Sprintf("10.0.%d.%d", i/256, i%256)
