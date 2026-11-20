@@ -6,6 +6,7 @@ package serve
 
 import (
 	"net"
+	"path/filepath"
 	"testing"
 
 	"charm.land/ssh"
@@ -22,7 +23,8 @@ type mockAddr string
 func (a mockAddr) Network() string { return "tcp" }
 func (a mockAddr) String() string  { return string(a) }
 
-func TestBanConnCallbackBlocksBannedIP(t *testing.T) {
+func newTestGuard(t *testing.T) *authguard.Guard {
+	t.Helper()
 	g, err := authguard.NewGuard(v1.AuthGuardConfig{
 		Enabled:       mo.Some(true),
 		MaxRetries:    mo.Some(2),
@@ -31,6 +33,11 @@ func TestBanConnCallbackBlocksBannedIP(t *testing.T) {
 		MaxTrackedIPs: mo.Some(100),
 	})
 	require.NoError(t, err)
+	return g.WithPersistPath(filepath.Join(t.TempDir(), "authguard-state.json"))
+}
+
+func TestBanConnCallbackBlocksBannedIP(t *testing.T) {
+	g := newTestGuard(t)
 
 	require.False(t, g.RecordFailure("10.0.0.1"))
 	require.True(t, g.RecordFailure("10.0.0.1"))
@@ -44,14 +51,7 @@ func TestBanConnCallbackBlocksBannedIP(t *testing.T) {
 }
 
 func TestBanConnCallbackAllowsCleanIP(t *testing.T) {
-	g, err := authguard.NewGuard(v1.AuthGuardConfig{
-		Enabled:       mo.Some(true),
-		MaxRetries:    mo.Some(2),
-		Window:        mo.Some("1h"),
-		BanDuration:   mo.Some("1h"),
-		MaxTrackedIPs: mo.Some(100),
-	})
-	require.NoError(t, err)
+	g := newTestGuard(t)
 
 	cb := banConnCallback(g)
 	conn := &mockConn{remoteAddr: mockAddr("10.0.0.2:12345")}
@@ -61,14 +61,7 @@ func TestBanConnCallbackAllowsCleanIP(t *testing.T) {
 }
 
 func TestPublicKeyAuthWrapperCountsFailures(t *testing.T) {
-	g, err := authguard.NewGuard(v1.AuthGuardConfig{
-		Enabled:       mo.Some(true),
-		MaxRetries:    mo.Some(2),
-		Window:        mo.Some("1h"),
-		BanDuration:   mo.Some("1h"),
-		MaxTrackedIPs: mo.Some(100),
-	})
-	require.NoError(t, err)
+	g := newTestGuard(t)
 
 	inner := func(ssh.Context, ssh.PublicKey) bool { return false }
 	handler := publicKeyAuthWithInner(g, inner)
