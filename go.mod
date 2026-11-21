@@ -20,7 +20,7 @@ require (
 	github.com/goccy/go-yaml v1.19.2
 	github.com/gofrs/flock v0.13.2
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/klauspost/compress v1.20.4
+	github.com/klauspost/compress v1.20.5
 	github.com/otiai10/copy v1.14.1
 	github.com/samber/mo v1.17.0
 	github.com/shirou/gopsutil/v4 v4.26.10
