@@ -17,11 +17,12 @@ import (
 func infraCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "infra",
-		Usage: "Manage secrets, volumes and networks",
+		Usage: "Manage secrets, volumes, networks and images",
 		Commands: []*cli.Command{
 			secretCommand(),
 			volumeCommand(),
 			networkCommand(),
+			imageCommand(),
 		},
 	}
 }
