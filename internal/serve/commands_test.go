@@ -39,7 +39,7 @@ func TestHelpRootShowsCommandList(t *testing.T) {
 
 	require.Contains(t, out, "Selenite is an immutable server OS built around podman compose stacks")
 	require.Contains(t, out, "Manage compose stacks")
-	require.Contains(t, out, "Manage secrets, volumes and networks")
+	require.Contains(t, out, "Manage secrets, volumes, networks and images")
 	require.Contains(t, out, "Manage machine lifecycle and configuration")
 	require.Contains(t, out, "Start a privileged debug container")
 	require.Contains(t, out, "Provision the machine on first boot")
@@ -93,6 +93,19 @@ func TestHelpDescribesStdinCommands(t *testing.T) {
 
 	out = runHelp(t, "help", "infra", "network", "inspect")
 	require.Contains(t, out, "ssh <server> infra network inspect <name>")
+}
+
+func TestHelpDescribesImageCommands(t *testing.T) {
+	out := runHelp(t, "help", "infra", "image")
+	require.Contains(t, out, "infra image — Manage container images")
+	require.Contains(t, out, "Load a container image from an image archive on stdin")
+
+	out = runHelp(t, "help", "infra", "image", "load")
+	require.Contains(t, out, "ssh <server> infra image load")
+	require.Contains(t, out, "'docker save' or 'podman save'")
+
+	out = runHelp(t, "help", "infra", "image", "remove")
+	require.Contains(t, out, "ssh <server> infra image remove <name>")
 }
 
 func TestHelpUnknownCommand(t *testing.T) {
