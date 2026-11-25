@@ -48,6 +48,11 @@ jobs:
       HOME: /root
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ forgejo.event.pull_request.head.sha || forgejo.sha }}
+          repository: ${{ forgejo.event.pull_request.head.repo.full_name || forgejo.repository }}
+          persist-credentials: false
+          allow-unsafe-pr-checkout: true
 
       - name: Configure usernamespaces
         run: |
