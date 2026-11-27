@@ -13,7 +13,7 @@ require (
 	charm.land/ssh v0.4.3
 	charm.land/wish/v2 v2.0.6
 	github.com/casbin/casbin/v3 v3.11.0
-	github.com/charmbracelet/x/ansi v0.11.10
+	github.com/charmbracelet/x/ansi v0.12.0
 	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/go-playground/validator/v10 v10.30.6
